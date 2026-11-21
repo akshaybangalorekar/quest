@@ -125,6 +125,29 @@ Deno.serve(async (req) => {
 
 
 
+  // read the pages again that came back without figure positions, so their diagrams can be cut out
+  if (body?.mode === "reread") {
+    const limit = Number(body?.limit ?? 4);
+    const { data: pages } = await admin.rpc("pages_without_boxes", { p_limit: limit });
+    const done: any[] = [];
+    for (const pg of (pages ?? []) as any[]) {
+      const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/parse-page`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          token: (await admin.from("app_config").select("value").eq("key", "drain_token").maybeSingle()).data?.value,
+          paper_id: pg.paper_id, page: pg.page_no,
+        }),
+      });
+      const out: any = await res.json().catch(() => ({}));
+      done.push({ paper: pg.paper_id, page: pg.page_no, ok: !!out?.ok, boxes: out?.boxes ?? null });
+    }
+    return json({ reread: done.length, done });
+  }
+
   // draw the figures that were never drawn, and only keep the ones that pass their own check
   if (body?.mode === "figures") {
     const limit = Number(body?.limit ?? 10);
