@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.43.0";
+import * as data from "./data.js?v=3.44.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.43.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.44.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -515,8 +515,10 @@ async function openTimetable() {
       : "no date";
 
     const key = String(x.family ?? x.label).toLowerCase();
-    const syncedX = syncCount(key, "servable");
-    const examCount = syncedX >= 0 ? syncedX : (x.items ?? 0);
+    const cRow = (S.examCounts ?? []).find((r) => String(r.exam).toLowerCase() === key) ?? {};
+    const fallbackX = syncCount(key, "servable") >= 0 ? syncCount(key, "servable") : (x.items ?? 0);
+    const examCount = Number(cRow.total ?? fallbackX);   // the whole exam, not just what is servable
+    const examReady = Number(cRow.ready ?? fallbackX);
     const pipe = (S.pipeline ?? []).find((p) => String(p.key).toLowerCase() === key) ?? {};
     const left = Number(pipe.left_to_solve ?? examCount);
     const solved = Number(pipe.solved ?? 0);
@@ -2512,6 +2514,8 @@ async function goParent() {
   // one source of truth: every number below comes from a single read of the truth function
   const TR = S.TR ?? {};
   const rows = TR.families ?? [];
+  if (!TR.exam_counts) { const { data: ec } = await sb.rpc("exam_counts").catch(() => ({ data: null })); TR.exam_counts = ec ?? []; }
+  S.examCounts = TR.exam_counts ?? [];
   const banks = TR.content?.banks ?? [];
   const specs = TR.specs ?? [];
   const topicMap = {};
@@ -2532,8 +2536,10 @@ async function goParent() {
     const fam = f.label;
     // the count comes from the shared view, so this card and the child's agree
     const syncKey = String(f.family ?? fam).toLowerCase();
-    const synced = syncCount(syncKey, "servable");
-    const examCount = synced >= 0 ? synced : (f.items ?? 0);
+    const cRow2 = (S.examCounts ?? []).find((r) => String(r.exam).toLowerCase() === syncKey) ?? {};
+    const fallback2 = syncCount(syncKey, "servable") >= 0 ? syncCount(syncKey, "servable") : (f.items ?? 0);
+    const examCount = Number(cRow2.total ?? fallback2);
+    const examReady = Number(cRow2.ready ?? fallback2);
     const pipeRow = (S.pipeline ?? []).find((p) => String(p.key).toLowerCase() === syncKey) ?? {};
     const pipeTone = examCount === 0 ? "orange" : examCount < 30 ? "amber" : "green";
     const pipeTip = examCount === 0
@@ -2598,7 +2604,7 @@ async function goParent() {
         <span class="ttName">${esc(fam)}</span>
         <span class="chip ${toneForCount(pipeRow.left_to_solve ?? examCount)}"
               title="${examCount} questions · ${pipeRow.solved ?? 0} solved · ${pipeRow.left_to_solve ?? examCount} left to solve. ${(pipeRow.left_to_solve ?? examCount) === 0 ? "Nothing left to practise on." : (pipeRow.left_to_solve ?? examCount) < 30 ? "Thinning: under 30 unsolved." : "A healthy queue."}">
-          <b>${examCount}</b> questions · <b>${pipeRow.solved ?? 0}</b> solved</span>
+          <b>${examCount}</b> questions · <b>${examReady}</b> ready</span>
         <span class="chip grey" title="${esc(fam)} sits on ${esc(when)}"><b>${f.days_left ?? 0}</b> days</span>
         <span class="ttMeta" style="margin-left:auto">${coveredMin} of ${sitsMin} min testable</span>
       </div>

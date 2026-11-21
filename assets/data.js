@@ -153,4 +153,6 @@ export const generated_bank = (args) => call((a) => sb.rpc("generated_bank", a),
 
 export const tabs_view = (args) => call((a) => sb.rpc("tabs_view", a), args);
 
+export const exam_counts = (args) => call((a) => sb.rpc("exam_counts", a), args);
+
 export const table = (name) => sb.from(name);
