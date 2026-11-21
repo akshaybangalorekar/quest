@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.46.0";
+import * as data from "./data.js?v=3.47.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.46.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.47.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -4423,7 +4423,8 @@ function showQuestion(q) {
   $("chatWrap").appendChild(el);
   stickBottom();
   paintOptions(q);
-  autoFigure("question", q.idx, "qFig", q.prompt, q.diagram_svg, q);
+  autoFigure("question", q.idx, "qFig", q.prompt, q.diagram_svg, q)
+    .then(() => { if (!$("qFig")?.innerHTML.trim()) pageCrop(q.chapter, q.idx, "qFig"); });
   S.startedAt = Date.now(); S.nudged = 0;
   S.onScreen = { chapter: q.chapter, idx: q.idx, prompt: q.prompt };
   S.qBudget = 150;
@@ -5293,6 +5294,7 @@ registerActions({
   },
 
   openTab: (el) => openTab(el.dataset.a0, el.dataset.a1),
+  pageCrop,
 
   keepOutOfTurn: async () => {
     const words = ($("keepWords")?.value ?? "").trim();
