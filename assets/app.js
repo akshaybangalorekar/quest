@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.44.0";
+import * as data from "./data.js?v=3.45.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.44.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.45.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2620,9 +2620,13 @@ async function goParent() {
 
   const sumLine = $("pExamSum");
   if (sumLine) {
-    const total = (S.sync?.totals?.questions ?? 0);
+    const total = (S.examCounts ?? []).reduce((a, r) => a + Number(r.total ?? 0), 0)
+                  || (S.sync?.totals?.questions ?? 0);
+    const ready = (S.examCounts ?? []).reduce((a, r) => a + Number(r.ready ?? 0), 0)
+                  || (S.sync?.totals?.questions ?? 0);
     const heldBack = Number(S.sync?.totals?.failed ?? 0);
-    sumLine.innerHTML = `<span class="chip blue" title="The five cards below add up to this, and it is the same number Help shows."><b>${total}</b> questions across the five exams</span>` +
+    sumLine.innerHTML = `<span class="chip blue" title="Everything written for the five exams. The cards below add up to this."><b>${total}</b> questions</span>
+      <span class="chip grey" title="Checked and answerable, so they can be given to him now."><b>${ready}</b> ready</span>` +
       (heldBack ? `<span class="chip red" title="Written but rejected by the check, so not counted above."><b>${heldBack}</b> held back</span>` : "");
   }
 
@@ -3694,7 +3698,7 @@ async function loadWhatsNew(family) {
 
   // exactly two numbers: not attempted, and attempted
   const tabCard = (t) => `
-    <button class="tabCard" data-action="openTab" data-a0="${t.chapter}"
+    <button class="tabCard" data-action="openTab" data-a0="${t.chapter}" data-a1="${esc(t.title)}"
       style="flex:0 0 190px;text-align:left;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff">
       <div style="font-weight:600;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         ${esc(t.title)}</div>
@@ -3720,33 +3724,46 @@ async function loadWhatsNew(family) {
 }
 
 /* what is inside a tab, and the one button that opens it for him */
-async function openTab(n) {
+async function openTab(n, title) {
   const box = $("tabDetail");
   if (!box) return;
-  const t = (S.tabs ?? []).find((x) => Number(x.n) === Number(n)) ?? {};
+  const t = (S.tabs ?? []).find((x) => Number(x.chapter) === Number(n)
+        && (!title || String(x.title) === String(title))) ?? {};
+
+  // the clicked card turns orange, and only one at a time
+  document.querySelectorAll(".tabCard").forEach((el) => {
+    const on = el.dataset.a0 === String(n) && (!title || el.dataset.a1 === String(title));
+    el.style.borderColor = on ? "#f0a15a" : "var(--line)";
+    const name = el.querySelector("div");
+    if (name) name.style.color = on ? "#c2691a" : "";
+  });
+
   box.innerHTML = `<div class="sub">Opening…</div>`;
   const { data } = await sb.rpc("tab_questions", { p_chapter: Number(n), p_limit: 12 });
   const rows = data ?? [];
+  const total = Number(t.questions ?? rows.length);
+  const shown = rows.length;
+
   box.innerHTML = `
     <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:12px">
-      <div style="font-weight:600">${esc(String(t.title ?? "this tab").split(" · ").pop())}</div>
-      <div class="sub" style="margin-top:4px">${esc(String(t.blurb ?? ""))}</div>
+      <div style="font-weight:600;color:#c2691a">${esc(t.title ?? "this tab")}</div>
       <div class="chipRow" style="margin:8px 0">
-        <span class="chip blue"><b>${t.questions ?? rows.length}</b> in this tab</span>
-        ${t.verified ? `<span class="chip green"><b>${t.verified}</b> verified</span>` : ""}
-        ${t.paper ? `<span class="chip grey">${esc(String(t.paper).slice(0, 28))}</span>` : ""}
+        <span class="chip grey"><b>${t.fresh ?? total}</b> not attempted</span>
+        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted ?? 0}</b> attempted</span>
+        ${Number(t.to_check) ? `<span class="chip amber"><b>${t.to_check}</b> to check</span>` : ""}
       </div>
+      <div class="sub" style="margin-bottom:6px">Showing ${shown} of ${total}${
+        Number(t.servable) < total ? ` · ${t.servable} ready to serve, the rest are still to be checked` : ""}</div>
       <div style="max-height:220px;overflow:auto">
         ${rows.map((q, i) => `<div class="sub" style="padding:4px 0;border-bottom:1px solid var(--line)">
-          ${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</div>`).join("") || `<div class="sub">Nothing servable in this tab yet.</div>`}
+          ${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</div>`).join("")
+          || `<div class="sub">Nothing servable in this tab yet — ${Number(t.to_check) || "some"} still to be checked.</div>`}
       </div>
       <div class="bar" style="margin-top:10px">
         <button class="go small" data-action="startChapter" data-a0="${Number(n)}">Open this for him →</button>
       </div>
     </div>`;
 }
-
-
 
 async function openPaper(id) {
   const { data: row } = await sb.from("papers").select("*").eq("id", id).maybeSingle();
@@ -5266,7 +5283,7 @@ registerActions({
   openChapter: (el) => openChapter(Number(el.dataset.a0)),
   padKey: (el) => padKey(el.dataset.a0),
 
-  openTab: (el) => openTab(el.dataset.a0),
+  openTab: (el) => openTab(el.dataset.a0, el.dataset.a1),
 
   keepOutOfTurn: async () => {
     const words = ($("keepWords")?.value ?? "").trim();
