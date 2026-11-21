@@ -155,4 +155,6 @@ export const tabs_view = (args) => call((a) => sb.rpc("tabs_view", a), args);
 
 export const exam_counts = (args) => call((a) => sb.rpc("exam_counts", a), args);
 
+export const figure_crop = (args) => call((a) => sb.rpc("figure_crop", a), args);
+
 export const table = (name) => sb.from(name);
