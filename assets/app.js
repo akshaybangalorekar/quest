@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.47.0";
+import * as data from "./data.js?v=3.47.1";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.47.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.47.1";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -988,6 +988,22 @@ async function showPaperPage(box, q) {
    2. our drawing, compared against the real figure — used only if it matches
    3. the real figure, cut out of the uploaded page
    4. the page itself, where the figure sits                                      */
+/* the figure as it appears on the page, cropped by CSS — no drawing, no invention */
+async function pageCrop(chapter, idx, boxId) {
+  const el = document.getElementById(boxId);
+  if (!el) return false;
+  const { data } = await sb.rpc("figure_crop", { p_chapter: Number(chapter), p_idx: Number(idx) });
+  if (!data || !data.path || !data.box) return false;
+  const { data: pub } = sb.storage.from("papers").getPublicUrl(data.path);
+  const url = pub?.publicUrl;
+  if (!url) return false;
+  const b = data.box;
+  const w = Number(b.w ?? 0), h = Number(b.h ?? 0);
+  if (!(w > 0.02 && h > 0.02)) return false;
+  el.innerHTML = `<div style="width:100%;max-width:420px;aspect-ratio:${(w * 100).toFixed(1)}/${(h * 100).toFixed(1)};background-image:url('${url}');background-size:${(100 / w).toFixed(2)}% ${(100 / h).toFixed(2)}%;background-position:${(b.x / Math.max(0.0001, 1 - w) * 100).toFixed(2)}% ${(b.y / Math.max(0.0001, 1 - h) * 100).toFixed(2)}%;background-repeat:no-repeat;border:1px solid var(--line);border-radius:10px"></div>`;
+  return true;
+}
+
 async function autoFigure(kind, key, targetId, prompt, existing, q) {
   const box = $(targetId);
   if (!box) return;
