@@ -125,6 +125,32 @@ Deno.serve(async (req) => {
 
 
 
+  // finish a paper that stopped partway: read every page still marked unread
+  if (body?.mode === "pages") {
+    const limit = Number(body?.limit ?? 4);
+    const { data: rows } = await admin.from("paper_pages")
+      .select("paper_id, page_no").eq("done", false)
+      .order("paper_id").order("page_no").limit(limit);
+    const out: any[] = [];
+    for (const pg of (rows ?? []) as any[]) {
+      const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/parse-page`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          token: (await admin.from("app_config").select("value").eq("key", "drain_token").maybeSingle()).data?.value,
+          paper_id: pg.paper_id, page: pg.page_no,
+        }),
+      });
+      const j: any = await res.json().catch(() => ({}));
+      out.push({ paper: pg.paper_id, page: pg.page_no, ok: !!j?.ok, added: j?.added ?? 0, why: j?.error ?? null });
+    }
+    const { count } = await admin.from("paper_pages").select("*", { count: "exact", head: true }).eq("done", false);
+    return json({ read: out.length, pages_left: count, out });
+  }
+
   // read the pages again that came back without figure positions, so their diagrams can be cut out
   if (body?.mode === "reread") {
     const limit = Number(body?.limit ?? 4);
