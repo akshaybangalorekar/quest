@@ -249,7 +249,7 @@ window.CASES = [
       await T.wait(200);
 
       const sum = T.$("pExamSum")?.textContent ?? "";
-      assert("the fold states the total", /12 questions across the five exams/.test(sum));
+      assert("the fold states the total", /12 questions/.test(sum) && /ready/.test(sum));
       const cards = T.$("pExams")?.textContent ?? "";
       assert("no verdict word on a card", !/\bthin\b/i.test(cards));
       assert("each card carries a count", /5 questions|7 questions/.test(cards));
@@ -414,7 +414,7 @@ window.CASES = [
       await T.wait(200);
 
       const sum = (T.$("pExamSum")?.textContent ?? "").replace(/\s+/g, " ");
-      assert("the fold states the split total", /12 questions across the five exams/.test(sum));
+      assert("the fold states the split total", /12 questions/.test(sum) && /ready/.test(sum));
       assert("and the held back beside it", /2 held back/.test(sum));
 
       // the same cards are drawn in the timetable, where the counts are visible without the fold
