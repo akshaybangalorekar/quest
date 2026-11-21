@@ -125,6 +125,25 @@ Deno.serve(async (req) => {
 
 
 
+  // check what is sitting unchecked, so nothing stays unservable
+  if (body?.mode === "check") {
+    const { data: rows } = await admin.from("problems")
+      .select("chapter, idx, prompt, has_diagram, diagram_svg, diagram_url, diagram_box")
+      .eq("status", "draft").limit(Number(body?.limit ?? 25));
+    let ok = 0, held = 0;
+    for (const r of rows ?? []) {
+      const v = await gateQuestion(admin,
+        { chapter: r.chapter, idx: r.idx, prompt: r.prompt }, "", false);
+      const state = v.state === "failed" ? "failed" : "provisional";
+      await admin.from("problems").update({
+        status: state, status_note: v.why.slice(0, 300), status_at: new Date().toISOString(),
+      }).eq("chapter", r.chapter).eq("idx", r.idx);
+      state === "failed" ? held++ : ok++;
+    }
+    const { count } = await admin.from("problems").select("*", { count: "exact", head: true }).eq("status", "draft");
+    return json({ checked: (rows ?? []).length, ok, held, still_draft: count });
+  }
+
   // a plain note for each upload tab, written from the questions themselves
   if (body?.mode === "blurb") {
     const { data: tabs } = await admin.from("strands").select("n, title, blurb").not("blurb", "is", null);

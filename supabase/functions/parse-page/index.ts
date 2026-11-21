@@ -49,17 +49,19 @@ Reply with JSON only:
 
 
 /* the rule lives in _shared/quality.ts, so every writer applies the same one */
-async function checkRows(asUser: any, paper_id: string, rows: any[]) {
-  let ok = 0, held = 0;
-  for (const row of rows.slice(0, 12)) {
+async function checkRows(admin: any, paper_id: string, rows: any[]) {
+  let ok = 0, held = 0, missed = 0;
+  // every question on the page, not the first twelve
+  for (const row of rows) {
     const q = String(row.q ?? "").trim();
     if (!q) continue;
     const v = await checkQuestion(q, !!row.diagram);
-    await asUser.from("problems").update(verdictColumns(v))
+    const { error } = await admin.from("problems").update(verdictColumns(v))
       .eq("paper_id", paper_id).eq("prompt", q);
+    if (error) { missed++; console.error("check write failed:", error.message); }
     v.ok ? ok++ : held++;
   }
-  return { ok, held };
+  return { ok, held, missed };
 }
 
 import { checkQuestion, verdictColumns } from "./_shared/quality.ts";
@@ -222,7 +224,7 @@ Two things to check before you start:
       if (key) await admin.rpc("regate_exam", { p_exam: key });
     } catch (e) { console.error("regate enqueue failed:", String((e as Error)?.message ?? e)); }
 
-    const checked = await checkRows(asUser, paper_id, rows);
+    const checked = await checkRows(admin, paper_id, rows);
 
     const unanswered = rows.filter((x: any) => !x.a).length;
     return json({ ok: true, added: added?.added ?? 0, improved: added?.improved ?? 0, unanswered,

@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.45.0";
+import * as data from "./data.js?v=3.46.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.45.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.46.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2157,7 +2157,9 @@ async function loadPapersToRead() {
     const state = total === 0
       ? (r.questions > 0 ? `${r.questions} questions in the bank` : "not read yet")
       : `${done} of ${total} pages · ${left === 0 ? "all read" : left + " to go"}`;
-    const statusIcon = `<details class="fileStatus"><summary title="What was read">
+    S.openStatus = S.openStatus ?? new Set();
+    const statusIcon = `<details class="fileStatus"${S.openStatus.has(r.id) ? " open" : ""}
+        data-action="toggleFileStatus" data-a0="${r.id}"><summary title="What was read">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/>
           <path d="M12 8v.01M11 12h1v4h1"/></svg>
@@ -5282,6 +5284,13 @@ registerActions({
   deletePaper: (el) => deletePaper(Number(el.dataset.a0)),
   openChapter: (el) => openChapter(Number(el.dataset.a0)),
   padKey: (el) => padKey(el.dataset.a0),
+
+  toggleFileStatus: (el) => {
+    // remember which files are open, so the four-second refresh cannot close them
+    S.openStatus = S.openStatus ?? new Set();
+    const id = el.dataset.a0;
+    if (S.openStatus.has(id)) S.openStatus.delete(id); else S.openStatus.add(id);
+  },
 
   openTab: (el) => openTab(el.dataset.a0, el.dataset.a1),
 
