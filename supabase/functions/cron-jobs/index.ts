@@ -125,6 +125,36 @@ Deno.serve(async (req) => {
 
 
 
+  // draw the figures that were never drawn, and only keep the ones that pass their own check
+  if (body?.mode === "figures") {
+    const limit = Number(body?.limit ?? 10);
+    const { data: rows } = await admin.from("problems")
+      .select("chapter, idx, prompt, diagram_svg")
+      .is("diagram_svg", null)
+      .or("has_diagram.eq.true,prompt.ilike.%diagram%,prompt.ilike.%figure%,prompt.ilike.%shown%,prompt.ilike.%below%")
+      .limit(limit);
+
+    let drawn = 0, refused = 0;
+    for (const r of rows ?? []) {
+      const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/draw-figure`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ chapter: r.chapter, kind: "question", idx: r.idx }),
+      });
+      const out: any = await res.json().catch(() => ({}));
+      if (out?.svg) {
+        await admin.from("problems").update({ has_diagram: true })
+          .eq("chapter", r.chapter).eq("idx", r.idx);
+        drawn++;
+      } else refused++;
+    }
+    const { count } = await admin.from("problems").select("*", { count: "exact", head: true }).is("diagram_svg", null);
+    return json({ tried: (rows ?? []).length, drawn, refused, still_without: count });
+  }
+
   // check what is sitting unchecked, so nothing stays unservable
   if (body?.mode === "check") {
     const { data: rows } = await admin.from("problems")
