@@ -30,6 +30,10 @@ Rules:
   and keep them out of the question text.
 - If the question has a figure, keep the words and ALSO give the figure's position in
   "diagram": {"x":0.0,"y":0.0,"w":0.0,"h":0.0} as fractions of the page, top-left corner first.
+  This is MANDATORY for any question that refers to a figure: "shown", "below", "above", "at the right",
+  "the diagram", "the figure", "the table", "the grid". If you can see where the figure sits on the page, give the
+  box. If you cannot, still give your best estimate — the box is used to cut the figure out of the page image, so a
+  rough box is far better than none.
   Draw the box generously: every label and arrow that belongs to the figure, nothing of the next
   question. Add "kind":"complex" for charts, tables, maps, Venn diagrams, nets; "simple" for one
   plain shape with a couple of labels. Omit "diagram" when there is no figure on this page.
@@ -140,7 +144,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.1,
-        max_tokens: 3000,
+        max_tokens: 8000,
         messages: [
           { role: "system", content: PROMPT },
           {
