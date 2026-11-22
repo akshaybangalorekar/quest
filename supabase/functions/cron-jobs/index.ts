@@ -125,6 +125,60 @@ Deno.serve(async (req) => {
 
 
 
+  // put questions into the exam's official topics: the model reads them, the database moves them
+  if (body?.mode === "filetopics") {
+    const exam = String(body?.exam ?? "olympiad");
+    const batch = Number(body?.batch ?? 12);
+
+    const { data: topics } = await admin.from("strands").select("n, title")
+      .eq("exam_id", (await admin.from("exams").select("id").eq("key", exam).single()).data?.id ?? 0)
+      .eq("source", "book");
+    const list = (topics ?? []) as any[];
+    if (!list.length) return json({ refused: "no official topics for " + exam });
+
+    const hints = await admin.from("papers").select("strand_hint").eq("exam", exam);
+    const loose = new Set((hints ?? []).map((h: any) => String(h.strand_hint ?? "").toLowerCase()));
+
+    const { data: rows } = await admin.from("problems")
+      .select("chapter, idx, prompt, strands!inner(exam_id, source, title)")
+      .limit(600);
+    const pending = (rows ?? []).filter((r: any) => {
+      const t = String(r.strands?.title ?? "");
+      return r.strands?.exam_id && r.strands.source !== "book" ||
+             loose.has(String(t.split(" · ").pop() ?? "").toLowerCase());
+    }).slice(0, batch);
+    if (!pending.length) return json({ moved: 0, note: "nothing left outside the topics" });
+
+    const names = list.map((t: any) => String(t.title).split(" · ").pop());
+    const asked = pending.map((r: any, i: number) => `${i + 1}. ${String(r.prompt).slice(0, 220)}`).join("\n");
+    const answer = await ask(
+      `You place maths questions into one official topic each. The topics are:\n${names.join("\n")}\n\n` +
+      `Reply with one line per question, exactly: <number>|<topic copied exactly>. No other words.`,
+      `Questions:\n${asked}`, 0.1, 900);
+
+    const map = new Map<number, string>();
+    for (const line of String(answer ?? "").split("\n")) {
+      const m = line.match(/^\s*(\d+)\s*\|\s*(.+?)\s*$/);
+      if (m) map.set(Number(m[1]), m[2]);
+    }
+
+    let moved = 0;
+    for (let i = 0; i < pending.length; i++) {
+      const chosen = map.get(i + 1);
+      if (!chosen) continue;
+      const target = list.find((t: any) => String(t.title).split(" · ").pop().toLowerCase() === chosen.toLowerCase());
+      if (!target) continue;
+      const r = pending[i] as any;
+      const { data: maxRow } = await admin.from("problems").select("idx")
+        .eq("chapter", target.n).order("idx", { ascending: false }).limit(1).maybeSingle();
+      const next = Number(maxRow?.idx ?? 0) + 1;
+      const { error } = await admin.rpc("move_question", {
+        p_from_chapter: r.chapter, p_from_idx: r.idx, p_to_chapter: target.n, p_to_idx: next });
+      if (!error) moved++;
+    }
+    return json({ tried: pending.length, moved, placed: [...map.entries()].length });
+  }
+
   // finish a paper that stopped partway: read every page still marked unread
   if (body?.mode === "pages") {
     const limit = Number(body?.limit ?? 4);
