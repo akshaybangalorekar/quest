@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.56.0";
+import * as data from "./data.js?v=3.57.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.56.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.57.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -3729,23 +3729,21 @@ async function openTab(n, title) {
   box.innerHTML = `<div class="sub">Opening…</div>`;
   const { data } = await sb.rpc("tab_questions", { p_chapter: Number(n), p_limit: 12 });
   const rows = data ?? [];
-  const total = Number(t.questions ?? rows.length);
+  const total = Number(t.servable ?? rows.length);   // what he can do, not what exists
   const shown = rows.length;
 
   box.innerHTML = `
     <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:12px">
       <div style="font-weight:600;color:#c2691a">${esc(t.title ?? "this tab")}</div>
       <div class="chipRow" style="margin:8px 0">
-        <span class="chip grey"><b>${t.fresh ?? total}</b> not attempted</span>
-        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted ?? 0}</b> attempted</span>
-        ${Number(t.to_check) ? `<span class="chip amber"><b>${t.to_check}</b> to check</span>` : ""}
+        <span class="chip grey"><b>${total}</b> to do</span>
+        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted ?? 0}</b> done</span>
       </div>
-      <div class="sub" style="margin-bottom:6px">Showing ${shown} of ${total}${
-        Number(t.servable) < total ? ` · ${t.servable} ready to serve, the rest are still to be checked` : ""}</div>
+      <div class="sub" style="margin-bottom:6px">Showing ${shown} of ${total}</div>
       <div style="max-height:220px;overflow:auto">
         ${rows.map((q, i) => `<div class="sub" style="padding:4px 0;border-bottom:1px solid var(--line)">
           ${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</div>`).join("")
-          || `<div class="sub">Nothing servable in this tab yet — ${Number(t.to_check) || "some"} still to be checked.</div>`}
+          || `<div class="sub">Nothing to do here yet.</div>`}
       </div>
       <div class="bar" style="margin-top:10px">
         <button class="go small" data-action="startChapter" data-a0="${Number(n)}">Open this for him →</button>
