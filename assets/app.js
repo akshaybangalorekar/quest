@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.85.0";
+import * as data from "./data.js?v=3.85.1";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.85.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.85.1";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -439,7 +439,7 @@ async function dismissNote(id) {
 
 /* the plan, per exam and per topic, and whether he is ahead of it */
 async function openTimetable() {
-  await ensureExamCounts();   // totals, not the fallback
+  await ensureExamCounts(true);   // totals, freshly read, never the fallback
   // the timetable shows counts, so it re-reads the shared view rather than trusting an old copy
   await loadSync();
   show("timetable");
@@ -2470,9 +2470,10 @@ function syncCount(key, field) {
   return ex ? Number(ex[field] ?? 0) : -1;
 }
 
-async function ensureExamCounts() {
-  if ((S.examCounts ?? []).length) return S.examCounts;
-  try { const { data } = await sb.rpc("exam_counts"); S.examCounts = data ?? []; }
+async function ensureExamCounts(force) {
+  const fresh = S.examCountsAt && (Date.now() - S.examCountsAt) < 30000;
+  if (!force && (S.examCounts ?? []).length && fresh) return S.examCounts;
+  try { const { data } = await sb.rpc("exam_counts"); S.examCounts = data ?? []; S.examCountsAt = Date.now(); }
   catch (e) { S.examCounts = []; console.error("exam_counts failed:", e); }
   return S.examCounts;
 }
@@ -5338,6 +5339,7 @@ registerActions({
   padShift: (el) => { padShift = !padShift; paintPad(); },
   wipe: (el) => wipe(el.dataset.arg ?? "all"),
   openPad: (el) => openPad(document.getElementById(el.dataset.target ?? "say"), el.dataset.mode ?? "text"),
+  S,
   toggleTrainingSource: (el) => toggleTrainingSource(el.dataset.id, el.dataset.on !== "1"),
   removeAlertTo: (el) => removeAlertTo(el.dataset.mail),
   pickOption: (el) => pickOption(el),
