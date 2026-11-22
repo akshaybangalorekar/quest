@@ -737,3 +737,34 @@ button.go:hover{background:var(--acc-ink)}
   border-radius:12px; padding:10px 12px}
 .scanState{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--acc)}
 .scanBar .fileDot.reading ~ .scanState{color:#8A5A00}
+
+/* ---------- restraint, with bright marks ----------
+   The layout stays quiet and uncoloured. Colour lives only in the marks:
+   a dot, a tick, a hairline. Nothing else is allowed to be bright. */
+.scanBar{background:none; border:0; border-radius:0; padding:10px 0}
+.scanState{color:var(--faint)}
+.scanBar .fileDot.reading ~ .scanState{color:var(--faint)}
+
+/* chips go neutral: the word carries meaning, a small mark carries colour */
+.chip, .chip.blue, .chip.green, .chip.amber, .chip.red, .chip.grey{
+  background:#F6F7F9; color:var(--mut); border:1px solid var(--line-soft)}
+.chip b{color:var(--ink)}
+.chip.blue::before, .chip.green::before, .chip.amber::before, .chip.red::before{
+  content:""; width:5px; height:5px; border-radius:50%; display:inline-block; margin-right:1px}
+.chip.blue::before{background:var(--acc)}
+.chip.green::before{background:var(--ok)}
+.chip.amber::before{background:var(--warn)}
+.chip.red::before{background:var(--bad)}
+
+/* the marks themselves are the only saturated things on the page */
+.fileDot{width:8px; height:8px; flex:0 0 8px}
+.fileDot.read{background:var(--ok); box-shadow:none}
+.fileDot.reading{background:var(--warn); box-shadow:0 0 0 4px rgba(232,163,23,.16)}
+.fileDot.stopped{background:var(--bad); box-shadow:0 0 0 4px rgba(216,27,96,.12)}
+.ticks i{height:3px; border-radius:2px; background:#EFF0F4}
+.ticks i.on{background:var(--ok); opacity:1}
+.ticks i.now{background:var(--warn); box-shadow:0 0 0 2px rgba(232,163,23,.2)}
+.pill.ok{background:none; color:var(--ok); padding-left:0}
+.pill.amber{background:none; color:#8A5A00; padding-left:0}
+.pill.red{background:none; color:var(--bad); padding-left:0}
+.pill.grey{background:none; color:var(--faint); padding-left:0}
