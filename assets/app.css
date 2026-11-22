@@ -132,7 +132,10 @@ main#session{height:calc(100dvh - 62px);height:calc(100vh - 62px);padding:0;gap:
 .trick .tp{font-size:15px;color:var(--ink);margin-top:3px;line-height:1.45}
 .trick .te{display:inline-block;margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:13.5px;
   background:#f4f3fb;color:#4a3fb0;border-radius:8px;padding:4px 9px}
-.ex{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px;background:#fff}
+.ex{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px;background:#fff;
+  cursor:pointer;transition:border-color .15s ease, box-shadow .15s ease}
+.ex:hover{border-color:var(--line-strong, #d6dbe2)}
+.ex.open{border-color:#00796B;box-shadow:0 1px 0 rgba(0,121,107,.08) inset}
 .ex .sol{color:var(--mut);font-size:14px;margin-top:8px;display:none}
 .ex.open .sol{display:block}
 
