@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.80.0";
+import * as data from "./data.js?v=3.81.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.80.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.81.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -745,6 +745,10 @@ async function loadTraining() {
     <div class="sub" style="margin-top:4px">
       ${failed} failed and never shown${draft ? ` · ${draft} still waiting to be checked` : ""}
     </div>
+    ${Number(k.llm_answers ?? 0) ? `<div class="sub" style="margin-top:4px">
+      ${k.llm_answers} answer${Number(k.llm_answers) === 1 ? "" : "s"} worked out by the coach, not from your files —
+      each one is marked on screen and on the printout until it is checked
+    </div>` : ""}
     <div class="sub" style="margin-top:8px">${draft
       ? `Checking the ${draft} still waiting — about ${minutes} minute${minutes === 1 ? "" : "s"}.`
       : cleared < prov
