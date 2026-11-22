@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.59.0";
+import * as data from "./data.js?v=3.60.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.59.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.60.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -688,11 +688,7 @@ async function loadTraining() {
       <span class="sub" style="flex:1">${esc(String(j.kind).replace("train:", ""))}</span>
       <span class="sub">${what}</span></div>`;
   }).join("");
-  $("trainJobs").innerHTML = jobLine
-    ? `<div class="k" style="margin-top:8px;margin-bottom:2px">Last runs — today</div>
-       <div class="sub" style="margin-bottom:6px">Each line is one automatic pass: what she read, and how many
-         questions that pass wrote. They add up to the total written above. Kept for a day.</div>${jobLine}`
-    : "";
+  $("trainJobs").innerHTML = "";   // no run log: the bar below is the status
 
   // the same shape of card everywhere: a heading, then chips, then one bar
   const chip = (n, label, tone, tip) =>
@@ -703,60 +699,34 @@ async function loadTraining() {
   const total = Math.max(1, cleared + prov + draft + failed);
   const pct = (n) => Math.round((n / total) * 100);
 
+  // from where, and how far the checking has got — nothing else
+  const fromFiles = Number(k.upload_questions ?? 0);
+  const fromWeb = Math.max(0, Number(k.bank ?? servable + failed + draft) - fromFiles);
+  const checked = cleared + prov + failed;
+  const written = Math.max(1, checked + draft);
+  const donePct = Math.round((checked / written) * 100);
+  const leftToCheck = draft;
+  const minutes = Math.ceil(leftToCheck / 3);   // the checker takes about three a minute
+
   $("trainStore").innerHTML = `
-    <div class="k" style="margin-bottom:6px">What she has read</div>
     <div class="chipRow">
-      ${chip(k.upload_docs ?? 0, "your uploads", (k.upload_docs ? "green" : "orange"),
-        (k.upload_docs ? "Files you have uploaded. Their questions are tagged with the file name."
-                       : "No file uploaded yet. Add one from the Question bank in the parent view."))}
-      ${chip(k.web_docs ?? 0, "websites read", (k.web_docs ? "green" : "orange"),
-        "Sites she fetches on her own. Every question she writes from them says which site it came from.")}
-      ${chip(k.docs ?? 0, "pages kept", "blue",
-        "One count per page she has kept — 10 pages from 10 websites. Nothing to do with your uploads; those are the orange chip.")}
-      ${chip(k.chunks ?? 0, "text passages", "blue",
-        "The pages above, cut into readable pieces she can quote. About six pieces per page, which is why 10 pages is 60 passages.")}
-    </div>
-    <div class="chipRow" style="display:none">
+      <span class="chip grey"><b>${fromFiles}</b> from your files</span>
+      <span class="chip grey"><b>${fromWeb}</b> from the web</span>
     </div>
 
-    <div class="k" style="margin:12px 0 6px">Questions he can be given — ${servable}</div>
-    <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;background:#eef1f5">
-      <div style="width:${pct(cleared)}%;background:#1f9d55" title="verified"></div>
-      <div style="width:${pct(prov)}%;background:#e6a817" title="not verified"></div>
-      <div style="width:${pct(draft)}%;background:#9aa7b4" title="to be verified"></div>
-      <div style="width:${pct(failed)}%;background:#d64545" title="held back"></div>
+    <div class="k" style="margin:14px 0 6px">Checked ${checked} of ${written} — ${donePct}%</div>
+    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#eef1f5">
+      <div style="width:${donePct}%;background:#00796B"></div>
+      <div style="width:${100 - donePct}%;background:#E8A317"></div>
     </div>
     <div class="chipRow" style="margin-top:8px">
-      ${chip(cleared, "verified", cleared ? "green" : "grey",
-        "Verified: checked against official material for its exam. The strongest state a question can be in.")}
-      ${chip(prov, "not verified", prov ? "amber" : "grey",
-        "Not verified: answerable, but no official material exists for its exam yet, so nothing can confirm it. He sees it marked not verified.")}
-      ${chip(draft, "to be verified", draft ? "amber" : "grey", "To be verified: written but not yet checked. Never shown.")}
-      ${chip(failed, "held back", failed ? "red" : "grey",
-        failed
-          ? `${failed} rejected by the check, in ${(S.heldBack ?? []).length} kind${(S.heldBack ?? []).length === 1 ? "" : "s"}. Open "Why questions are held back" below for each reason and an example. Nothing reaches him.`
-          : "Nothing has been rejected. Every question written so far passed its check.")}
+      <span class="chip ${cleared ? "green" : "grey"}"><b>${cleared}</b> verified</span>
+      <span class="chip grey"><b>${prov}</b> usable, unconfirmed</span>
+      <span class="chip ${failed ? "red" : "grey"}"><b>${failed}</b> held back</span>
     </div>
-    ${failed ? `<details style="margin-top:10px"><summary style="list-style:none;cursor:pointer">
-      <span class="chip red" title="Each reason, with how many questions it affected and one example.">
-        <b>${failed}</b> held back — see why</span></summary>
-      <div style="margin-top:8px">
-        ${(S.heldBack ?? []).map((x) => `
-          <div style="padding:6px 0;border-bottom:1px solid var(--line)">
-            <div class="chipRow"><span class="chip red"><b>${x.n}</b> question${x.n === 1 ? "" : "s"}</span></div>
-            <div class="sub" style="margin-top:4px">${esc(String(x.reason).slice(0, 220))}</div>
-            <div class="sub" style="margin-top:2px;opacity:.75">for example: “${esc(String(x.example ?? "").slice(0, 90))}”</div>
-          </div>`).join("") || `<div class="sub">No reason was recorded.</div>`}
-        <div class="sub" style="margin-top:8px">Nothing here is shown to him. She rewrites a question that can be
-          saved and discards the rest; the count falls on the next run.</div>
-      </div></details>` : ""}
-
-    <div class="sub" style="margin-top:6px">Written so far: <b>${servable + failed + draft}</b> =
-      <b>${servable}</b> he can be given + <b>${failed}</b> held back + <b>${draft}</b> to be verified.
-      The exam cards split the ${servable}; the runs below are how each pass added to the total.</div>
-    <div class="sub" style="margin-top:6px">${(k.official_exams ?? []).length
-      ? `Official material loaded for ${(k.official_exams ?? []).join(", ")}. Those questions are checked against it and can be cleared.`
-      : "No official material yet, so every question is unverified until you upload some. That is what turns them into verified questions."}</div>`;
+    <div class="sub" style="margin-top:8px">${leftToCheck
+      ? `Checking runs on its own — about ${minutes} minute${minutes === 1 ? "" : "s"} left.`
+      : "Everything written has been checked."}</div>`;
 }
 
 /* read the sources, keep your uploads, and check the bank */

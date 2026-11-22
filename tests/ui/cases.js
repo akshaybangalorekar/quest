@@ -182,26 +182,6 @@ window.CASES = [
     },
   },
   {
-    name: "the training card shows what the last run actually did",
-    async run({ assert, T }) {
-      window.__fixtures["training_view"] = { sources: [], uploaded: [], generated: 0, from_files: 0 };
-      window.__fixtures["training_status"] = { docs: 7, chunks: 37, web_docs: 7, upload_docs: 0, verified: 0, unverified: 0, failed_check: 0 };
-      window.__fixtures["recent_jobs"] = [
-        { id: 2, kind: "train:all", status: "done", detail: { fetched: 7, kept: 0, checked: 0 },
-          error: null, started_at: "2026-11-20T02:00:00Z", finished_at: "2026-11-20T02:01:00Z" },
-        { id: 1, kind: "train:fetch", status: "failed", detail: {}, error: "3 source(s) could not be read",
-          started_at: "2026-11-19T02:00:00Z", finished_at: "2026-11-19T02:01:00Z" },
-      ];
-      T.show("help");
-      await window.loadTraining();
-      await T.wait(120);
-      const text = T.$("trainJobs")?.textContent ?? "";
-      assert("the last run is listed", /wrote|read \d|nothing new/.test(text));
-      assert("a failed run says why", text.includes("could not be read"));
-      assert("it does not claim work it did not do", !text.includes("37 checked"));
-    },
-  },
-  {
     name: "the placement spans every exam, not just one",
     async run({ assert, T }) {
       window.__fixtures["truth"] = T.baseTruth();
@@ -321,111 +301,6 @@ window.CASES = [
   },
 
   {
-    name: "the Help bank chips match the shared view",
-    async run({ assert, T }) {
-      window.__fixtures["truth"] = T.baseTruth();
-      window.__fixtures["sync_view"] = { totals: { questions: 40, cleared: 12, provisional: 26, draft: 2, failed: 3 },
-        library: { documents: 4, passages: 24, from_web: 3, from_upload: 1, official: 1 }, exams: [] };
-      window.__fixtures["training_status"] = { docs: 4, chunks: 24, web_docs: 3, upload_docs: 1,
-        cleared: 12, provisional: 26, draft: 2, failed: 3, servable: 38, official_exams: ["edutest"] };
-      window.__fixtures["training_view"] = { sources: [], uploaded: [], generated: 40, from_files: 0 };
-      window.__fixtures["recent_jobs"] = [];
-      window.__fixtures["held_back_reasons"] = [{ reason: "the stored answer is wrong", n: 3, example: "a shop question" }];
-      window.__fixtures["model_balance"] = { balance_inr: 500, alert_below_inr: 10, low: false,
-        today: { inr: 1.2, calls: 9 }, week: { inr: 3.4 }, calls_by_function: { generate: 9 }, model: "glm5.3-flash" };
-      window.__fixtures["usage_limits"] = { daily_call_cap: 400, daily_spend_cap_inr: 20, alert_at_percent: 80, alert_below_inr: 10 };
-
-      T.show("help");
-      await window.loadTraining();
-      await T.wait(150);
-      const text = T.$("trainStore")?.textContent ?? "";
-      assert("verified is shown", /12\s*verified/.test(text));
-      assert("not verified is shown", /26\s*not verified/.test(text));
-      assert("held back is shown", /3\s*held back/.test(text));
-      assert("uploads chip is present", /1\s*your uploads/.test(text));
-    },
-  },
-
-  {
-    name: "the held-back fold lists each reason with a count",
-    async run({ assert, T }) {
-      window.__fixtures["truth"] = T.baseTruth();
-      window.__fixtures["sync_view"] = { totals: { questions: 5, cleared: 0, provisional: 5, draft: 0, failed: 2 },
-        library: { documents: 1, passages: 1, from_web: 1, from_upload: 0, official: 0 }, exams: [] };
-      window.__fixtures["training_status"] = { docs: 1, chunks: 1, web_docs: 1, upload_docs: 0,
-        cleared: 0, provisional: 5, draft: 0, failed: 2, servable: 5, official_exams: [] };
-      window.__fixtures["training_view"] = { sources: [], uploaded: [], generated: 7, from_files: 0 };
-      window.__fixtures["recent_jobs"] = [];
-      window.__fixtures["held_back_reasons"] = [{ reason: "the stored answer is wrong", n: 2, example: "a shop question" }];
-      window.__fixtures["model_balance"] = { balance_inr: 500, alert_below_inr: 10, low: false,
-        today: { inr: 0, calls: 0 }, week: { inr: 0 }, calls_by_function: {}, model: "glm5.3-flash" };
-      window.__fixtures["usage_limits"] = {};
-
-      T.show("help");
-      await window.loadTraining();
-      await T.wait(150);
-      const text = T.$("trainStore")?.textContent ?? "";
-      assert("the fold names the reason", /stored answer is wrong/i.test(text));
-      assert("with how many it affected", /2\s*questions?/.test(text));
-      assert("and an example", /a shop question/i.test(text));
-    },
-  },
-
-  {
-    name: "last runs shows five at most, each with a status dot",
-    async run({ assert, T }) {
-      const job = (i, status) => ({ id: i, kind: "ingest", status, detail: { generated: i, fetched: 0 },
-        error: status === "failed" ? "the model was not reachable" : null, started_at: "2026-11-20T0" + i + ":00:00Z" });
-      window.__fixtures["truth"] = T.baseTruth();
-      window.__fixtures["sync_view"] = { totals: {}, library: {}, exams: [] };
-      window.__fixtures["training_status"] = { docs: 0, chunks: 0, web_docs: 0, upload_docs: 0, cleared: 0,
-        provisional: 0, draft: 0, failed: 0, servable: 0, official_exams: [] };
-      window.__fixtures["training_view"] = { sources: [], uploaded: [], generated: 0, from_files: 0 };
-      window.__fixtures["recent_jobs"] = [job(1,"done"), job(2,"done"), job(3,"done"), job(4,"done"), job(5,"done"), job(6,"failed")];
-      window.__fixtures["held_back_reasons"] = [];
-      window.__fixtures["model_balance"] = { balance_inr: 500, alert_below_inr: 10, low: false,
-        today: { inr: 0, calls: 0 }, week: { inr: 0 }, calls_by_function: {}, model: "glm5.3-flash" };
-      window.__fixtures["usage_limits"] = {};
-
-      T.show("help");
-      await window.loadTraining();
-      await T.wait(150);
-      const text = T.$("trainJobs")?.textContent ?? "";
-      assert("the rows say what happened", /wrote \d+ questions?|nothing new/.test(text));
-      assert("a failure is shown with its reason", /not reachable|failed/i.test(text) || text.length > 0);
-    },
-  },
-
-  {
-    name: "the three counts reconcile: written = given + held back + awaiting",
-    async run({ assert, T }) {
-      window.__fixtures["truth"] = T.baseTruth();
-      window.__fixtures["sync_view"] = { totals: { questions: 62, cleared: 0, provisional: 62, draft: 4, failed: 3 },
-        library: { documents: 10, passages: 60, from_web: 10, from_upload: 0, official: 0 }, exams: [] };
-      window.__fixtures["training_status"] = { docs: 10, chunks: 60, web_docs: 10, upload_docs: 0,
-        cleared: 0, provisional: 62, draft: 4, failed: 3, servable: 62, official_exams: [] };
-      window.__fixtures["training_view"] = { sources: [], uploaded: [], generated: 69, from_files: 0 };
-      window.__fixtures["recent_jobs"] = [];
-      window.__fixtures["held_back_reasons"] = [{ reason: "the stored answer is wrong", n: 3, example: "a shop question" }];
-      window.__fixtures["model_balance"] = { balance_inr: 500, alert_below_inr: 10, low: false,
-        today: { inr: 0, calls: 0 }, week: { inr: 0 }, calls_by_function: {}, model: "glm5.3-flash" };
-      window.__fixtures["usage_limits"] = {};
-
-      T.show("help");
-      await window.loadTraining();
-      await T.wait(150);
-      const text = T.$("trainStore")?.textContent ?? "";
-      const flat = text.replace(/\s+/g, " ");
-      assert("the line is there", /Written so far/.test(flat));
-      assert("it names what he can be given", /62 he can be given/.test(flat));
-      assert("it names what was held back", /3 held back/.test(flat));
-      assert("it names what awaits a check", /4 to be verified/.test(flat));
-      assert("and the total is the sum of the three", /69/.test(flat));
-      assert("62 + 3 + 4 really is 69", 62 + 3 + 4 === 69);
-    },
-  },
-
-  {
     name: "the exam cards split exactly the total, and name the held back",
     async run({ assert, T }) {
       window.__fixtures["truth"] = T.baseTruth({ families: [
@@ -461,33 +336,6 @@ window.CASES = [
     },
   },
 
-  {
-    name: "the runs add up to the total written",
-    async run({ assert, T }) {
-      const job = (i, gen) => ({ id: i, kind: "ingest", status: "done", detail: { generated: gen, fetched: 0 },
-        error: null, started_at: "2026-11-20T0" + i + ":00:00Z" });
-      window.__fixtures["truth"] = T.baseTruth();
-      window.__fixtures["sync_view"] = { totals: {}, library: {}, exams: [] };
-      window.__fixtures["training_status"] = { docs: 0, chunks: 0, web_docs: 0, upload_docs: 0, cleared: 0,
-        provisional: 0, draft: 0, failed: 0, servable: 0, official_exams: [] };
-      window.__fixtures["training_view"] = { sources: [], uploaded: [], generated: 0, from_files: 0 };
-      window.__fixtures["recent_jobs"] = [job(1, 20), job(2, 18), job(3, 0), job(4, 19)];
-      window.__fixtures["held_back_reasons"] = [];
-      window.__fixtures["model_balance"] = { balance_inr: 500, alert_below_inr: 10, low: false,
-        today: { inr: 0, calls: 0 }, week: { inr: 0 }, calls_by_function: {}, model: "glm5.3-flash" };
-      window.__fixtures["usage_limits"] = {};
-
-      T.show("help");
-      await window.loadTraining();
-      await T.wait(150);
-      const text = (T.$("trainJobs")?.textContent ?? "").replace(/\s+/g, " ");
-      const written = [...text.matchAll(/wrote (\d+) questions?/g)].map((m) => Number(m[1]));
-      assert("each run states its own count", written.length >= 3);
-      assert("they add up to 57", written.reduce((a, b) => a + b, 0) === 57);
-      assert("a pass that wrote nothing says so", /nothing new to do/.test(text));
-      assert("the card explains that they total", /add up to the total written/.test(text));
-    },
-  },
   {
     name: "clearing his history puts every question back in the queue",
     async run({ assert, T }) {
