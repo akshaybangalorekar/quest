@@ -52,7 +52,13 @@ export async function gateQuestion(
   const shown = `${text}` +
     `${Array.isArray(q.options) && q.options.length ? `\nOptions: ${q.options.join(" / ")}` : ""}` +
     `${figure ? `\n\nThe drawing that will be shown with it (SVG):\n${figure}` : ""}`;
-  const v = jsonIn(await ask(GATE(official), `Question: ${shown}\nStored answer: ${q.answer ?? "(none)"}`, 0, 500));
+  const asked = `Question: ${shown}\nStored answer: ${q.answer ?? "(none)"}`;
+  let v = jsonIn(await ask(GATE(official), asked, 0, 800));
+  if (!v) {
+    // one more try, saying exactly what shape is wanted — a silent retry beats a wrong verdict
+    v = jsonIn(await ask(GATE(official) + "\n\nReply with JSON only, no other words.",
+      asked, 0, 800));
+  }
   if (!v) return { state: "draft", why: "the checker did not answer — it will be tried again" };
 
   const cleared = String(v.cleared).toUpperCase() === "YES" && String(v.options_ok ?? "YES").toUpperCase() === "YES"
