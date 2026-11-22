@@ -286,7 +286,15 @@ few words. No working, no punctuation at the end, no "the answer is".`,
       if (!error) { moved++; placed.push(String(target.title).split(" · ").pop()); }
     }
     const { count } = await admin.from("problems").select("*", { count: "exact", head: true }).eq("chapter", hold.n);
-    return json({ tried: pending.length, moved, left_in_holding: count, placed });
+    const depth = Number(body?.depth ?? 0);
+    if ((count ?? 0) > 0 && depth < 200) {
+      const { data: tok } = await admin.from("app_config").select("value").eq("key", "drain_token").maybeSingle();
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cron-jobs`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: tok?.value, mode: "filetopics", exam, batch, depth: depth + 1 }),
+      }).catch(() => {});
+    }
+    return json({ tried: pending.length, moved, left_in_holding: count, placed, chained: (count ?? 0) > 0, depth });
   }
 
   // finish a paper that stopped partway: read every page still marked unread
