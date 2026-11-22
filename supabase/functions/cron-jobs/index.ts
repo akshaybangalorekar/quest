@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
             if (e2) { bad++; if (why.length < 3) why.push(String(e2.message).slice(0, 90)); } else ok++;
           } else {
             const { data: full } = await admin.from("problems")
-              .select("prompt, options, diagram_svg").eq("chapter", r.chapter).eq("idx", r.idx).maybeSingle();
+              .select("prompt, options, diagram_svg, diagram_box, paper_id").eq("chapter", r.chapter).eq("idx", r.idx).maybeSingle();
             const { data: ans } = await admin.from("problem_answers")
               .select("answer").eq("chapter", r.chapter).eq("idx", r.idx).maybeSingle();
             const { data: ex } = await admin.from("strands").select("exams!inner(key)")
@@ -173,7 +173,10 @@ Deno.serve(async (req) => {
             const verdict = await gateQuestion(admin, {
               exam: String((ex as any)?.exams?.key ?? "olympiad"),
               prompt: String(full?.prompt ?? r.prompt), options: (full as any)?.options ?? null,
-              answer: ans?.answer ?? null, figure: (full as any)?.diagram_svg ?? null });
+              answer: ans?.answer ?? null,
+              // a drawn svg, or a box we can cut out of the page image, both count as having the figure
+              figure: (full as any)?.diagram_svg
+                ?? ((full as any)?.diagram_box ? `crop:${JSON.stringify((full as any).diagram_box)}` : null) });
             await admin.from("problems").update({ status: verdict.state, status_note: verdict.why })
               .eq("chapter", r.chapter).eq("idx", r.idx);
             if (verdict.state === "failed") bad++; else ok++;
