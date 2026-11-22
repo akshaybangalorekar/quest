@@ -126,7 +126,70 @@ Deno.serve(async (req) => {
 
 
   // a question with no answer cannot be marked: the model solves it, and says so
-  if (body?.mode === "answer") {
+  // answer or check, several at a time, and keep going until the queue is empty
+  if (body?.mode === "answer" || body?.mode === "check") {
+    const mode = String(body.mode);
+    const want = Number(body?.limit ?? 30);
+    const lanes = Math.max(1, Math.min(8, Number(body?.lanes ?? 8)));
+    const depth = Number(body?.depth ?? 0);
+
+    const { data: claimed, error } = await admin.rpc("claim_questions", { p_mode: mode, p_n: want });
+    if (error) return json({ error: error.message });
+    const work = (claimed ?? []) as any[];
+
+    let ok = 0, bad = 0, next = 0;
+    const worker = async () => {
+      for (;;) {
+        const i = next++;
+        if (i >= work.length) return;
+        const r = work[i];
+        try {
+          if (mode === "answer") {
+            const opts = Array.isArray(r.options) && r.options.length ? `\nOptions: ${r.options.join(" / ")}` : "";
+            const out = await ask(
+              `Solve this maths question. Reply with one line only: the answer, as short as possible. No working.`,
+              `Question: ${r.prompt}${opts}`, 0, 60);
+            const answer = String(out ?? "").trim().replace(/^["']|["']$/g, "").slice(0, 120);
+            if (!answer) { bad++; continue; }
+            const { error: e2 } = await admin.from("problem_answers")
+              .insert({ chapter: r.chapter, idx: r.idx, answer, mark_mode: "llm" });
+            if (e2) bad++; else ok++;
+          } else {
+            const { data: full } = await admin.from("problems")
+              .select("prompt, options, diagram_svg").eq("chapter", r.chapter).eq("idx", r.idx).maybeSingle();
+            const { data: ans } = await admin.from("problem_answers")
+              .select("answer").eq("chapter", r.chapter).eq("idx", r.idx).maybeSingle();
+            const { data: ex } = await admin.from("strands").select("exams!inner(key)")
+              .eq("n", r.chapter).maybeSingle();
+            const verdict = await gateQuestion(admin, {
+              exam: String((ex as any)?.exams?.key ?? "olympiad"),
+              prompt: String(full?.prompt ?? r.prompt), options: (full as any)?.options ?? null,
+              answer: ans?.answer ?? null, figure: (full as any)?.diagram_svg ?? null });
+            await admin.from("problems").update({ status: verdict.state, status_note: verdict.why })
+              .eq("chapter", r.chapter).eq("idx", r.idx);
+            if (verdict.state === "failed") bad++; else ok++;
+          }
+        } catch (_e) { bad++; }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(lanes, work.length) }, worker));
+    await admin.rpc("release_claims", { p_mode: mode });
+
+    const { count: left } = await admin.from("problems")
+      .select("*", { count: "exact", head: true }).eq("status", "draft");
+    const { data: capOk } = await admin.rpc("may_call_model");
+    const chained = (left ?? 0) > 0 && depth < 80 && (capOk as any)?.allowed !== false;
+    if (chained) {
+      const { data: tok } = await admin.from("app_config").select("value").eq("key", "drain_token").maybeSingle();
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cron-jobs`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: tok?.value, mode, limit: want, lanes, depth: depth + 1 }),
+      }).catch(() => {});
+    }
+    return json({ mode, lanes, claimed: work.length, ok, bad, left, chained, depth });
+  }
+
+  if (body?.mode === "answer_legacy") {
     const limit = Number(body?.limit ?? 20);
     const { data: rows } = await admin.from("problems")
       .select("chapter, idx, prompt, options")
@@ -294,7 +357,7 @@ few words. No working, no punctuation at the end, no "the answer is".`,
   }
 
   // check what is sitting unchecked, so nothing stays unservable
-  if (body?.mode === "check") {
+  if (body?.mode === "check_legacy") {
     const { data: rows } = await admin.from("problems")
       .select("chapter, idx, prompt, has_diagram, diagram_svg, diagram_url, diagram_box")
       .eq("status", "draft").limit(Number(body?.limit ?? 25));
