@@ -207,7 +207,7 @@ Two things to check before you start:
     const strand = String(paper.strand_hint ?? "").trim() || String(parsed.strand ?? "").trim() || "General";
 
     // write them as this child, so the same rules apply as everywhere else
-    const { data: added, error: addErr } = await admin.rpc("add_questions", {
+    const { data: added, error: addErr } = await admin.rpc("add_questions_trusted", {
       p_exam: paper.exam,
       p_strand: strand,
       p_rows: rows,
