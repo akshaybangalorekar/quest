@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.70.0";
+import * as data from "./data.js?v=3.71.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.70.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.71.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -944,23 +944,19 @@ async function showPaperPage(box, q) {
    4. the page itself, where the figure sits                                      */
 /* the temples on the sign-in screen, with the credit their licence requires */
 const TEMPLES = [
-  { name: "Brihadeeswarar Temple", place: "Thanjavur, Tamil Nadu · Chola, 1010 CE",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Thanjavur_Big_Temple_Front_View.jpg/1280px-Thanjavur_Big_Temple_Front_View.jpg",
-    credit: "KR Maheshprasad, CC BY-SA 4.0, Wikimedia Commons" },
-  { name: "Brihadeeswarar Temple, entrance gopurams", place: "Thanjavur, Tamil Nadu",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Brihadeeswara_Temple_Entrance_Gopurams%2C_Thanjavur.JPG/1280px-Brihadeeswara_Temple_Entrance_Gopurams%2C_Thanjavur.JPG",
-    credit: "KARTY JazZ, CC BY-SA 4.0, Wikimedia Commons" },
-  { name: "Brihadeeswarar Temple, gopuram corner", place: "Thanjavur, Tamil Nadu",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Gopuram_Corner_View_of_Thanjavur_Brihadeeswara_Temple..JPG/640px-Gopuram_Corner_View_of_Thanjavur_Brihadeeswara_Temple..JPG",
-    credit: "KARTY JazZ, CC BY-SA 4.0, Wikimedia Commons" },
+  { name: "Brihadeeswarar Temple", place: "Thanjavur, Tamil Nadu", file: "temple-1.jpg" },
+  { name: "Brihadeeswarar Temple", place: "Thanjavur, Tamil Nadu", file: "temple-2.jpg" },
+  { name: "Nandi and lingam, Lepakshi", place: "Lepakshi, Andhra Pradesh", file: "temple-3.jpg" },
+  { name: "Nandi monolith, Lepakshi", place: "Lepakshi, Andhra Pradesh", file: "temple-4.jpg" },
+  { name: "Temple shikhara", place: "north India", file: "temple-5.jpg" },
 ];
 
 function paintTemple() {
   const band = $("artBand"), tag = $("templeTag");
   if (!band) return;
   const t = TEMPLES[Math.floor(Math.random() * TEMPLES.length)];
-  band.style.backgroundImage = `url("${t.url}")`;
-  if (tag) tag.innerHTML = `<b>${esc(t.name)}</b><span>${esc(t.place)}</span><span>${esc(t.credit)}</span>`;
+  band.style.backgroundImage = `url("./assets/temples/${t.file}")`;
+  if (tag) tag.innerHTML = `<b>${esc(t.name)}</b><span>${esc(t.place)}</span>`;
 }
 
 /* the figure as it appears on the page, cropped by CSS — no drawing, no invention */
