@@ -282,6 +282,13 @@ function readHtmlBook(html: string) {
 
   return parts.map((p) => {
     const imgs = [...p.body.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map((x) => x[1]);
+    // inline drawings: keep the svg and the caption that explains it
+    for (const fig of p.body.matchAll(/<figure[\s\S]*?<\/figure>/gi)) {
+      const block = fig[0];
+      const svg = block.match(/<svg[\s\S]*?<\/svg>/i);
+      const cap = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+      if (svg) imgs.push("svg:" + (cap ? cap[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160) : ""));
+    }
     const words = p.body.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
     return { name: p.name.slice(0, 120), chars: words.length, images: imgs, sample: words.slice(0, 700) };
