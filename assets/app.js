@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.79.0";
+import * as data from "./data.js?v=3.80.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.79.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.80.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -439,6 +439,7 @@ async function dismissNote(id) {
 
 /* the plan, per exam and per topic, and whether he is ahead of it */
 async function openTimetable() {
+  await ensureExamCounts();   // totals, not the fallback
   // the timetable shows counts, so it re-reads the shared view rather than trusting an old copy
   await loadSync();
   show("timetable");
@@ -537,6 +538,8 @@ async function openTimetable() {
       const sections = (y.sections ?? []).map((sec) => {
         const isFirst = (y.sections ?? [])[0]?.part === sec.part;
         let own = topics.filter((t) => (SOURCE_SECTION[t.source] ?? "Whole paper") === sec.part);
+        // if the name does not match, the first section carries the exam's topics rather than nothing
+        if (!own.length && isFirst && topics.length) own = topics;
         if (!own.length && isFirst) {
           const claimed = new Set((y.sections ?? []).map((z) => z.part));
           own = topics.filter((t) => !claimed.has(SOURCE_SECTION[t.source] ?? "Whole paper"));
