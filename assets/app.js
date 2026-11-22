@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.54.0";
+import * as data from "./data.js?v=3.55.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.54.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.55.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2435,6 +2435,13 @@ function syncCount(key, field) {
   return ex ? Number(ex[field] ?? 0) : -1;
 }
 
+async function ensureExamCounts() {
+  if ((S.examCounts ?? []).length) return S.examCounts;
+  try { const { data } = await sb.rpc("exam_counts"); S.examCounts = data ?? []; }
+  catch (e) { S.examCounts = []; console.error("exam_counts failed:", e); }
+  return S.examCounts;
+}
+
 async function loadParent() {
   await loadSync();
   const { data } = await sb.rpc("truth");
@@ -2491,7 +2498,10 @@ async function goParent() {
   // one source of truth: every number below comes from a single read of the truth function
   const TR = S.TR ?? {};
   const rows = TR.families ?? [];
-  if (!TR.exam_counts) { const { data: ec } = await sb.rpc("exam_counts").catch(() => ({ data: null })); TR.exam_counts = ec ?? []; }
+  if (!TR.exam_counts) {
+    try { const res = await sb.rpc("exam_counts"); TR.exam_counts = res?.data ?? []; }
+    catch (e) { TR.exam_counts = []; console.error("exam_counts failed:", e); }
+  }
   S.examCounts = TR.exam_counts ?? [];
   const banks = TR.content?.banks ?? [];
   const specs = TR.specs ?? [];
@@ -3604,6 +3614,7 @@ async function openDash() {
   {
     const { data: trD } = await sb.rpc("truth");
     S.TR = trD ?? S.TR;
+  await ensureExamCounts();
     const j = trD?.journey ?? S.TR?.journey ?? null;
     if ($("dashFlight")) $("dashFlight").innerHTML = journeyChart(j);
   }
