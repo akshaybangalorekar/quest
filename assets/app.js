@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.78.0";
+import * as data from "./data.js?v=3.79.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.78.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.79.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -608,7 +608,7 @@ async function loadTraining() {
       <span class="dot ${x.passages ? "green" : x.active ? "amber" : "grey"}"></span>
       <span class="srcName">${esc(x.name)}
         <span class="sub" style="display:block">${esc(KIND[x.kind] ?? x.kind)}${x.url ? ` · ${esc(String(x.url).replace(/^https?:\/\//, ""))}` : ""}</span></span>
-      <span class="srcWhen">${x.found_by === "coach" ? `<span class="chip" style="font-size:10.5px">found by her</span> ` : ""}${x.passages ? `${x.passages} passages · ${when(x.last_read)}` : when(x.last_read)}</span>
+      <span class="srcWhen">${x.found_by === "coach" ? `<span class="chip" style="font-size:10.5px">found by her</span> ` : ""}${x.passages ? `${x.passages} passage${x.passages === 1 ? "" : "s"} · ${when(x.last_read)}` : when(x.last_read)}</span>
       ${S.isParent ? `<button class="mini" data-id="${x.id}" data-on="${x.active ? "1" : ""}"
           data-action="toggleTrainingSource" data-id="${x.id}" data-on="${x.active ? "1" : ""}">${x.active ? "Pause" : "Resume"}</button>` : ""}
     </div>`).join("") : `<div class="sub">No sources yet.</div>`;
