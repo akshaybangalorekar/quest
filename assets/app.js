@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.62.0";
+import * as data from "./data.js?v=3.63.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.62.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.63.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -711,24 +711,26 @@ async function loadTraining() {
       <span class="chip grey"><b>${fromWeb}</b> from the web</span>
     </div>
 
-    <div class="k" style="margin:14px 0 6px">Checked ${checked} of ${written} — ${donePct}%</div>
-    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#eef1f5">
-      <div style="width:${donePct}%;background:#00796B"></div>
-      <div style="width:${100 - donePct}%;background:#E8A317"></div>
+    <div class="k" style="margin:14px 0 6px">${written} questions</div>
+    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#EEF1F5">
+      <div style="width:${Math.round(cleared / written * 100)}%;background:#00796B"></div>
+      <div style="width:${Math.round(prov / written * 100)}%;background:#8FBFB6"></div>
+      <div style="width:${Math.round(failed / written * 100)}%;background:#D81B60"></div>
+      <div style="width:${Math.round(draft / written * 100)}%;background:#E8A317"></div>
     </div>
     <div class="chipRow" style="margin-top:8px">
       <span class="chip ${cleared ? "green" : "grey"}"><b>${cleared}</b> verified</span>
-      <span class="chip grey"><b>${prov}</b> usable, unconfirmed</span>
+      <span class="chip grey"><b>${prov}</b> usable</span>
       <span class="chip ${failed ? "red" : "grey"}"><b>${failed}</b> held back</span>
+      ${draft ? `<span class="chip amber"><b>${draft}</b> waiting</span>` : ""}
     </div>
-    <div class="sub" style="margin-top:8px">${leftToCheck
-      ? `Checking runs on its own — about ${minutes} minute${minutes === 1 ? "" : "s"} left.`
-      : "Everything written has been checked."}</div>
-    <div class="sub" style="margin-top:4px">${cleared < prov
-      ? `Verified means confirmed against official material for that exam. Only ${(k.official_exams ?? []).length
-          ? (k.official_exams ?? []).join(", ") : "no exam"} has any, and its material has not been read yet —
-          so ${prov} questions passed their check but nothing can confirm them.`
-      : "Every question that could be confirmed against official material has been."}</div>`;
+    <div class="sub" style="margin-top:8px">${draft
+      ? `Checking the ${draft} still waiting — about ${minutes} minute${minutes === 1 ? "" : "s"}.`
+      : cleared < prov
+        ? `Verified needs official material for that exam. Only ${(k.official_exams ?? []).length
+            ? (k.official_exams ?? []).join(", ") : "no exam"} has any and it has not been read yet, so
+            ${prov} questions passed their check but nothing confirms them.`
+        : "Everything written has been checked and confirmed where material exists."}</div>`;
 }
 
 /* read the sources, keep your uploads, and check the bank */
