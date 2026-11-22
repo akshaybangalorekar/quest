@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.60.0";
+import * as data from "./data.js?v=3.61.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.60.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.61.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -595,10 +595,7 @@ async function loadTraining() {
           data-action="toggleTrainingSource" data-id="${x.id}" data-on="${x.active ? "1" : ""}">${x.active ? "Pause" : "Resume"}</button>` : ""}
     </div>`).join("") : `<div class="sub">No sources yet.</div>`;
 
-  const uploads = v.uploaded ?? [];
-  // only real files are listed here; the counts are on the chips above
-  ups.innerHTML = uploads.map((u) => `<div class="upRow"><span class="upName">${esc(u.title ?? "a paper")}
-      <span class="sub" style="display:block">${u.questions ?? 0} questions · ${u.pages ?? 0} pages</span></span></div>`).join("");
+  ups.innerHTML = "";   // the Question bank lists the files; Help does not repeat them
 
   $("trainAdd").style.display = S.isParent ? "" : "none";
 
@@ -2102,7 +2099,7 @@ async function loadPapersToRead() {
     return;
   }
   if (rows.some((r) => r.status === "failed" || (r.pages_total ?? 0) > (r.pages_done ?? 0))) {
-    $("papersDetails")?.setAttribute("open", "");
+    /* folded by default: a parent opens it when they want it */
   }
   box.innerHTML = rows.map((r) => {
     const left = (r.pages_total ?? 0) - (r.pages_done ?? 0);
