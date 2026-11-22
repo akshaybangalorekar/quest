@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.50.0";
+import * as data from "./data.js?v=3.51.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -133,84 +133,59 @@ let scanTimer = null;
 async function paintScanBanner() {
   const el = $("scanBanner");
   if (!el) return;
-  // this bar is the parent's: on his screen it would be noise he cannot act on
   if (!S.isParent) { el.className = "hidden"; return; }
   try {
-    const { data: p } = await sb.rpc("ingest_progress");
-    if (!p) return;
-    const busy = p.state === "running" || p.queued > 0;
-
-    // a file of yours being read comes first: it is the thing a parent just did
     const { data: papers } = await sb.rpc("papers_to_read");
-    const reading = (papers ?? []).filter((x) => (x.pages_total ?? 0) > 0 && (x.pages_done ?? 0) < (x.pages_total ?? 0));
+    const rows = papers ?? [];
+
+    // a paper still being read comes first: it is the thing a parent is waiting on
+    const reading = rows.filter((x) => (x.pages_total ?? 0) > 0 && (x.pages_done ?? 0) < (x.pages_total ?? 0));
 
     if (reading.length) {
       const one = reading[0];
+      const total = one.pages_total ?? 0, done = one.pages_done ?? 0;
+      const ticks = Array.from({ length: total }, (_, i) =>
+        `<i class="${i < done ? "on" : i === done ? "now" : ""}"></i>`).join("");
       el.className = "";
-      el.innerHTML = `<span><b>Reading your file</b> — ${esc(one.title)}: page ${one.pages_done ?? 0} of
-        ${one.pages_total ?? 0}${(one.questions ?? 0) ? `, ${one.questions} questions so far` : ", no questions yet"}
-        ${reading.length > 1 ? ` · ${reading.length - 1} more file${reading.length === 2 ? "" : "s"} waiting` : ""}.
-        It finishes on its own; you can carry on.</span>`;
+      el.innerHTML = `<div class="scanBar">
+        <span class="fileDot reading"></span>
+        <span class="scanName">${esc(one.title)}</span>
+        <span class="filePages">${done}/${total}</span>
+        <span class="scanFacts">${one.questions ?? 0} questions${one.diagrams ? ` · ${one.diagrams} figures` : ""}</span>
+      </div>
+      <div class="ticks" style="margin-top:8px">${ticks}</div>`;
       clearTimeout(scanTimer);
       scanTimer = setTimeout(paintScanBanner, 5000);
       return;
     }
 
-    if (busy) {
+    if (rows.length) {
+      const q = rows.reduce((a, x) => a + Number(x.questions ?? 0), 0);
       el.className = "";
-      el.innerHTML = `<span><b>Reading online sources and writing questions</b> — ${p.fetched ?? 0} sources read,
-        ${p.generated ?? 0} written this run, ${p.bank ?? 0} in the bank${p.queued ? ` · ${p.queued} more run${p.queued === 1 ? "" : "s"} queued` : ""}.
-        You can carry on; this finishes on its own.</span>`;
-      clearTimeout(scanTimer);
-      scanTimer = setTimeout(paintScanBanner, 6000);
+      el.innerHTML = `<div class="scanBar">
+        <span class="fileDot read"></span>
+        <span class="scanName">${rows.length} file${rows.length === 1 ? "" : "s"} read</span>
+        <span class="scanFacts">${q} questions</span>
+        <button class="link" data-action="dismissScanBanner">OK</button>
+      </div>`;
       return;
     }
 
-    // nothing running: say where the bank actually stands
     const { data: counts } = await sb.rpc("question_status_counts");
     const c = counts ?? {};
     const toCheck = Number(c.draft ?? 0), unverified = Number(c.provisional ?? 0);
     const verified = Number(c.cleared ?? 0), held = Number(c.failed ?? 0);
-    const allDone = toCheck === 0 && unverified === 0;
-
-    if (allDone && verified > 0) {
+    if (toCheck === 0 && unverified === 0 && verified > 0) {
       el.className = "";
-      el.innerHTML = `<span><b>Everything is checked</b> — ${verified} question${verified === 1 ? "" : "s"} verified
-        against official material${held ? `, ${held} held back` : ""}. Nothing is waiting.</span>`;
+      el.innerHTML = `<div class="scanBar"><span class="fileDot read"></span>
+        <span class="scanName">all checked</span>
+        <span class="scanFacts">${verified} verified${held ? ` · ${held} held back` : ""}</span></div>`;
       return;
     }
     el.className = "";
-    el.innerHTML = `<span><b>Nothing running</b> — ${verified} verified · ${unverified} not verified ·
-      ${toCheck} still to check${held ? ` · ${held} held back` : ""}.
-      ${toCheck ? "She checks them on the next run." : ""}</span>`;
-    return;
-
-    if (false) {
-      el.className = "hidden";
-      clearTimeout(scanTimer);
-      scanTimer = setTimeout(paintScanBanner, 6000);
-      return;
-    }
-
-    const justRead = (papers ?? []).filter((x) => (x.pages_total ?? 0) > 0 && (x.pages_done ?? 0) === (x.pages_total ?? 0));
-    if (justRead.length && !reading.length) {
-      const q = justRead.reduce((a, x) => a + (x.questions ?? 0), 0);
-      el.className = "";
-      el.innerHTML = `<span><b>Your files are read</b> — ${justRead.length} file${justRead.length === 1 ? "" : "s"},
-        ${q} question${q === 1 ? "" : "s"} in the bank.</span>
-        <button class="mini" data-action="dismissScanBanner">Got it</button>`;
-      return;
-    }
-
-    if (p.state === "done" && p.finished_at && (Date.now() - new Date(p.finished_at).getTime()) < 120000) {
-      el.className = "";
-      el.innerHTML = `<span><b>Finished</b> — read ${p.fetched ?? 0} sources, wrote ${p.generated ?? 0} questions,
-        ${p.bank ?? 0} now in the bank.</span>
-        <button class="mini" data-action="dismissScanBanner">Got it</button>`;
-      return;
-    }
-
-    el.className = "hidden";
+    el.innerHTML = `<div class="scanBar"><span class="fileDot ${toCheck ? "reading" : "read"}"></span>
+      <span class="scanName">${toCheck ? "checking" : "nothing running"}</span>
+      <span class="scanFacts">${verified} verified · ${unverified} unchecked · ${toCheck} to check${held ? ` · ${held} held` : ""}</span></div>`;
   } catch (_) {
     el.className = "hidden";
   }
@@ -315,7 +290,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.50.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.51.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
