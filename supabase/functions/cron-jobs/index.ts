@@ -20,6 +20,20 @@ const cors = {
   "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/* fire-and-forget does not survive: the runtime freezes the isolate when the
+   response is sent. waitUntil keeps it alive until the next batch is accepted. */
+function chain(body: Record<string, unknown>) {
+  const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/cron-jobs`;
+  const p = fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => {});
+  // @ts-ignore Supabase runtime global
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(p);
+  return p;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -193,10 +207,7 @@ Deno.serve(async (req) => {
     const chained = (left ?? 0) > 0 && depth < 80 && (capOk as any)?.allowed !== false;
     if (chained) {
       const { data: tok } = await admin.from("app_config").select("value").eq("key", "drain_token").maybeSingle();
-      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cron-jobs`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: tok?.value, mode, limit: want, lanes, depth: depth + 1 }),
-      }).catch(() => {});
+      await chain({ token: tok?.value, mode, limit: want, lanes, depth: depth + 1 });
     }
     return json({ mode, lanes, claimed: work.length, ok, bad, why, left, chained, depth });
   }
@@ -289,10 +300,7 @@ few words. No working, no punctuation at the end, no "the answer is".`,
     const depth = Number(body?.depth ?? 0);
     if ((count ?? 0) > 0 && depth < 200) {
       const { data: tok } = await admin.from("app_config").select("value").eq("key", "drain_token").maybeSingle();
-      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cron-jobs`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: tok?.value, mode: "filetopics", exam, batch, depth: depth + 1 }),
-      }).catch(() => {});
+      await chain({ token: tok?.value, mode: "filetopics", exam, batch, depth: depth + 1 });
     }
     return json({ tried: pending.length, moved, left_in_holding: count, placed, chained: (count ?? 0) > 0, depth });
   }
