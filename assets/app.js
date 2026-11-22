@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.49.0";
+import * as data from "./data.js?v=3.50.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.49.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.50.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -434,9 +434,7 @@ async function paintNote() {
   if (!bar) return;
   const { data } = await sb.rpc("parse_note");
   if (!data) { bar.innerHTML = ""; return; }
-  const retry = data.status === "failed" && data.paper_id
-    ? `<button class="go small" data-action="retryReading" data-a0="${data.paper_id}" data-a1="1">Try the reading again</button>`
-    : "";
+  const retry = "";
   bar.innerHTML = `<div class="card" style="padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <div style="flex:1 1 240px"><b>${esc(data.note)}</b></div>
       ${retry}
@@ -2182,10 +2180,6 @@ async function loadPapersToRead() {
       <div class="ticks">${ticks}</div>
       ${facts ? `<div class="fileFacts">${facts}</div>` : ""}
       <div class="bar" style="gap:6px;margin-top:10px">
-        ${left > 0 ? `<button class="go small" title="Carry on from the page it stopped at — pages already read are skipped"
-              data-action="retryReading" data-a0="${r.id}" data-a1="0">Continue reading</button>` : ""}
-        <button class="ghost small" title="Read every page again from the start — for when the first reading was wrong"
-              data-action="retryReading" data-a0="${r.id}" data-a1="1">Read the whole file again</button>
         <button class="ghost small" style="border-color:#f2c9c9;color:#b8383d" data-action="deletePaper" data-a0="${r.id}">Delete</button>
       </div>
     </div>`;
