@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.74.0";
+import * as data from "./data.js?v=3.75.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.74.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.75.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -3893,9 +3893,11 @@ async function openTrack(id) {
   S.shelf = "book";
   show("track");
   if (!S.restoring) saveRoute();
-  $("trackStats").textContent =
-    `${(S.ctx?.xp ?? 0).toLocaleString()} XP · streak ${S.ctx?.streak ?? 0} days · ` +
-    `day ${S.ctx?.days_in ?? 1} of the programme`;
+  const xp = (S.ctx?.xp ?? 0).toLocaleString();
+  const streak = S.ctx?.streak ?? 0;
+  $("trackStats").textContent = streak
+    ? `${xp} XP · ${streak} day${streak === 1 ? "" : "s"} in a row`
+    : `${xp} XP · a fresh start`;
 
   paintTrackCard(id);
   loadWhatsNew(id);
