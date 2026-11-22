@@ -125,6 +125,39 @@ Deno.serve(async (req) => {
 
 
 
+  // a question with no answer cannot be marked: the model solves it, and says so
+  if (body?.mode === "answer") {
+    const limit = Number(body?.limit ?? 20);
+    const { data: rows } = await admin.from("problems")
+      .select("chapter, idx, prompt, options")
+      .not("prompt", "is", null)
+      .limit(1200);
+    const need = ((rows ?? []) as any[]).filter((r) => r.prompt);
+    const { data: have } = await admin.from("problem_answers").select("chapter, idx");
+    const known = new Set((have ?? []).map((a: any) => `${a.chapter}:${a.idx}`));
+    const missing = need.filter((r) => !known.has(`${r.chapter}:${r.idx}`)).slice(0, limit);
+    if (!missing.length) return json({ solved: 0, note: "every question has an answer" });
+
+    let solved = 0;
+    for (const r of missing) {
+      const opts = Array.isArray(r.options) && r.options.length ? `\nOptions: ${r.options.join(" / ")}` : "";
+      const out = await ask(
+        `Solve this maths question. Reply with one line only: the answer as short as possible — a number, a fraction or a
+few words. No working, no punctuation at the end, no "the answer is".`,
+        `Question: ${r.prompt}${opts}`, 0, 60);
+      const answer = String(out ?? "").trim().replace(/^["']|["']$/g, "").slice(0, 120);
+      if (!answer) continue;
+      const { error } = await admin.from("problem_answers").insert({
+        chapter: r.chapter, idx: r.idx, answer, mark_mode: "llm",
+      });
+      if (!error) solved++;
+    }
+    const { data: after } = await admin.from("problem_answers").select("chapter, idx");
+    const knownAfter = new Set((after ?? []).map((a: any) => `${a.chapter}:${a.idx}`));
+    const left = need.filter((r) => !knownAfter.has(`${r.chapter}:${r.idx}`)).length;
+    return json({ tried: missing.length, solved, still_missing: left });
+  }
+
   // put questions into the exam's official topics: the model reads them, the database moves them
   if (body?.mode === "filetopics") {
     const exam = String(body?.exam ?? "olympiad");
