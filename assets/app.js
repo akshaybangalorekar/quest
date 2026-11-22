@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.61.0";
+import * as data from "./data.js?v=3.62.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.61.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.62.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -723,7 +723,12 @@ async function loadTraining() {
     </div>
     <div class="sub" style="margin-top:8px">${leftToCheck
       ? `Checking runs on its own — about ${minutes} minute${minutes === 1 ? "" : "s"} left.`
-      : "Everything written has been checked."}</div>`;
+      : "Everything written has been checked."}</div>
+    <div class="sub" style="margin-top:4px">${cleared < prov
+      ? `Verified means confirmed against official material for that exam. Only ${(k.official_exams ?? []).length
+          ? (k.official_exams ?? []).join(", ") : "no exam"} has any, and its material has not been read yet —
+          so ${prov} questions passed their check but nothing can confirm them.`
+      : "Every question that could be confirmed against official material has been."}</div>`;
 }
 
 /* read the sources, keep your uploads, and check the bank */
