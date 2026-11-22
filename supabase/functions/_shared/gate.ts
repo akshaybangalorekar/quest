@@ -30,7 +30,7 @@ For the question you are shown, check all of these:
 Reply with JSON only:
 {"cleared":"YES","why":"","answer":"the answer you get","options_ok":"YES","figure_ok":"YES"}`;
 
-export type GateVerdict = { state: "cleared" | "provisional" | "failed"; why: string };
+export type GateVerdict = { state: "cleared" | "provisional" | "failed" | "draft"; why: string };
 
 export async function gateQuestion(
   admin: any,
@@ -53,7 +53,7 @@ export async function gateQuestion(
     `${Array.isArray(q.options) && q.options.length ? `\nOptions: ${q.options.join(" / ")}` : ""}` +
     `${figure ? `\n\nThe drawing that will be shown with it (SVG):\n${figure}` : ""}`;
   const v = jsonIn(await ask(GATE(official), `Question: ${shown}\nStored answer: ${q.answer ?? "(none)"}`, 0, 500));
-  if (!v) return { state: "failed", why: "it could not be checked" };
+  if (!v) return { state: "draft", why: "the checker did not answer — it will be tried again" };
 
   const cleared = String(v.cleared).toUpperCase() === "YES" && String(v.options_ok ?? "YES").toUpperCase() === "YES"
     && String(v.figure_ok ?? "YES").toUpperCase() === "YES";
