@@ -29,8 +29,8 @@ window.CASES = [
       await window.openTab(25, "Quest generated");
       await T.wait(20);
       const panelText = T.$("tabDetail")?.textContent ?? "";
-      assert("the panel speaks the same language as the card", /to do/.test(panelText) && !/not attempted/.test(panelText));
-      assert("and says how many are shown", /Showing \d+ of \d+/.test(panelText));
+      assert("the panel does not repeat the numbers", !/to do|not attempted/.test(panelText));
+      assert("it lists questions, nothing else", /A sample question/.test(panelText));
     },
   },
 

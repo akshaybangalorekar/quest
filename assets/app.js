@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.58.0";
+import * as data from "./data.js?v=3.59.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.58.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.59.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -3756,11 +3756,7 @@ async function openTab(n, title, audience) {
   box.innerHTML = `
     <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:12px">
       <div style="font-weight:600;color:#c2691a">${esc(t.title ?? "this tab")}</div>
-      <div class="chipRow" style="margin:8px 0">
-        <span class="chip grey">${esc(f.first)}</span>
-        <span class="chip ${f.done ? "green" : "grey"}">${esc(f.second)}</span>
-      </div>
-      <div class="sub" style="margin-bottom:6px">${esc(f.showing(shown))}</div>
+      ${shown < total ? `<div class="sub" style="margin-bottom:6px">${esc(f.showing(shown))}</div>` : ""}
       <div style="max-height:220px;overflow:auto">
         ${rows.map((q, i) => `<div class="sub" style="padding:4px 0;border-bottom:1px solid var(--line)">
           ${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</div>`).join("")
