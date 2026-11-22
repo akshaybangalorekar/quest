@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.81.0";
+import * as data from "./data.js?v=3.82.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.81.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.82.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2059,9 +2059,10 @@ async function printQuestions(fam) {
             : `${r.source_kind === "upload" ? "From your file" : "From the web"}: ${esc(r.source_ref ?? "written by the coach, no source recorded")}`}${r.source_url && !r.derived_from ? ` — ${esc(r.source_url)}` : ""}</div>
           ${Array.isArray(r.options) ? r.options.map((o) => `<div class="opt">${esc(o)}</div>`).join("") : ""}
           ${r.paper_id ? `<div class="src">from an uploaded paper</div>` : `<div class="src">written by the coach</div>`}
+          ${r.answer_by === "llm" ? `<div class="src" style="color:#7a5405">answer worked out by the coach — not taken from your file</div>` : ""}
         </div>`).join("")}`).join("")}
     <div class="key"><b>Answers</b><br>${rows.map((r, i) =>
-      `${i + 1}. ${esc(r.answer ?? "—")}`).join(" · ")}</div>
+      `${i + 1}. ${esc(r.answer ?? "—")}${r.answer_by === "llm" ? " (coach's answer)" : ""}`).join(" · ")}</div>
     </body></html>`;
 
   const w = window.open("", "_blank");
@@ -4463,6 +4464,8 @@ function showQuestion(q) {
   el.innerHTML = `
     <div class="n">CHAPTER ${q.chapter} · QUESTION ${q.idx} · ${S.si + 1} of ${S.script.length}</div>
     <div class="q">${esc(q.prompt)}${gateLabel(q)}</div>
+    ${q.answer_by === "llm" ? `<div class="sub" style="margin-top:4px;font-size:12px">
+      the answer to this one was worked out by the coach, not taken from your file</div>` : ""}
     <div class="bar">${skipButtonFor(q)}</div>
     <div id="qFig"></div>
     <div id="qOpts" class="opts"></div>
