@@ -34,6 +34,10 @@ window.CASES = [
       const text = document.body.textContent;
       assert("the total on screen is the shared total", new RegExp(`\\b${card.total}\\b`).test(text));
       assert("ready is only printed when it differs", card.ready < card.total);
+
+      // leave the shared cache empty so the next case starts clean
+      delete window.__fixtures["exam_counts"];
+      if (window.S) { window.S.examCounts = []; window.S.examCountsAt = 0; }
     },
   },
 
