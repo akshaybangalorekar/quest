@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.63.0";
+import * as data from "./data.js?v=3.64.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.63.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.64.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2120,9 +2120,11 @@ async function loadPapersToRead() {
       ? Array.from({ length: total }, (_, i) =>
           `<i class="${i < done ? "on" : i === done && state === "reading" ? "now" : ""}"></i>`).join("")
       : `<i class="now"></i>`;
+    const inFile = Number(r.figures_in_file ?? 0);
+    const attached = Number(r.diagrams ?? 0);
     const facts = [
       r.questions ? `${r.questions} questions` : null,
-      r.diagrams ? `${r.diagrams} figures` : null,
+      attached ? (inFile > attached ? `${attached} of ${inFile} figures` : `${attached} figures`) : (inFile ? `0 of ${inFile} figures` : null),
       (r.questions ?? 0) > (r.answers ?? 0) ? `${r.questions - r.answers} unanswered` : null,
     ].filter(Boolean).join(" · ");
 
