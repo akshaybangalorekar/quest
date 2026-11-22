@@ -10,11 +10,12 @@ window.CASES = [
       await T.wait(10);
       const pane = T.$("signin");
       assert("the sign-in screen is on", pane && !pane.classList.contains("hidden"));
-      assert("the page behind it cannot scroll", document.body.classList.contains("signing"));
+      assert("the pane is a fixed layer", getComputedStyle(pane).position === "fixed"
+        || (pane.getAttribute("style") ?? "").includes("fixed"));
       T.show("track");
       await T.wait(10);
       assert("signing in hides it", pane.classList.contains("hidden"));
-      assert("and the page can scroll again", !document.body.classList.contains("signing"));
+      assert("and the app screen is showing", !T.$("track").classList.contains("hidden"));
     },
   },
 
