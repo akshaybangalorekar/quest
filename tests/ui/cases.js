@@ -3,6 +3,30 @@
 
 window.CASES = [
   {
+    name: "a worked example opens when it is tapped",
+    async run({ assert, T }) {
+      const box = document.createElement("div");
+      box.className = "ex";
+      box.setAttribute("data-action", "toggleOpen");
+      box.innerHTML = `<b>Example 1</b> · <span class="sub">tap to see the method</span>
+        <div class="sol">Use speed = distance / time.</div>`;
+      document.body.appendChild(box);
+      await T.wait(10);
+
+      assert("the method starts hidden", getComputedStyle(box.querySelector(".sol")).display === "none");
+      box.click();
+      await T.wait(10);
+      assert("tapping it opens the method", box.classList.contains("open"));
+      assert("and the method is visible", getComputedStyle(box.querySelector(".sol")).display !== "none");
+      assert("the hint says how to close it", /hide/.test(box.textContent));
+      box.click();
+      await T.wait(10);
+      assert("tapping again closes it", !box.classList.contains("open"));
+      box.remove();
+    },
+  },
+
+  {
     name: "the sign-in screen goes away once you are in",
     async run({ assert, T }) {
       window.__fixtures["truth"] = T.baseTruth();

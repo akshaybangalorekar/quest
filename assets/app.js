@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.83.1";
+import * as data from "./data.js?v=3.84.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.83.1";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.84.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -5329,7 +5329,12 @@ registerActions({
     stagedFiles = [];
     if (btn) { btn.textContent = "Upload"; btn.disabled = true; }
   },
-  toggleOpen: (el) => el.closest("details")?.toggleAttribute("open"),
+  toggleOpen: (el) => {
+    const box = el.closest(".ex") ?? el;
+    box.classList.toggle("open");
+    const hint = box.querySelector(".sub");
+    if (hint) hint.textContent = box.classList.contains("open") ? "tap to hide the method" : "tap to see the method";
+  },
   padShift: (el) => { padShift = !padShift; paintPad(); },
   wipe: (el) => wipe(el.dataset.arg ?? "all"),
   openPad: (el) => openPad(document.getElementById(el.dataset.target ?? "say"), el.dataset.mode ?? "text"),
