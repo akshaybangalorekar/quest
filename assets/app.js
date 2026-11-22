@@ -537,6 +537,8 @@ async function openTimetable() {
       const sections = (y.sections ?? []).map((sec) => {
         const isFirst = (y.sections ?? [])[0]?.part === sec.part;
         let own = topics.filter((t) => (SOURCE_SECTION[t.source] ?? "Whole paper") === sec.part);
+        // if the name does not match, the first section carries the exam's topics rather than nothing
+        if (!own.length && isFirst && topics.length) own = topics;
         if (!own.length && isFirst) {
           const claimed = new Set((y.sections ?? []).map((z) => z.part));
           own = topics.filter((t) => !claimed.has(SOURCE_SECTION[t.source] ?? "Whole paper"));

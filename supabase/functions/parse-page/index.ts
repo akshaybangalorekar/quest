@@ -248,6 +248,10 @@ Two things to check before you start:
 
     const checked = await checkRows(admin, paper_id, rows);
 
+    // a file is not a topic: fold whatever it created into the holding tab
+    try { await admin.rpc("fold_upload_strands"); }
+    catch (e) { console.error("fold failed:", String((e as Error)?.message ?? e)); }
+
     const unanswered = rows.filter((x: any) => !x.a).length;
     return json({ ok: true, added: added?.added ?? 0, improved: added?.improved ?? 0, unanswered,
                   checked_ok: checked.ok, held_back: checked.held, strand, page });
