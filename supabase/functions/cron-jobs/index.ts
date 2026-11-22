@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
             const opts = Array.isArray(r.options) && r.options.length ? `\nOptions: ${r.options.join(" / ")}` : "";
             const out = await ask(
               `Solve this maths question. Reply with one line only: the answer, as short as possible. No working.`,
-              `Question: ${r.prompt}${opts}`, 0, 60);
+              `Question: ${r.prompt}${opts}`, 0, 220);
             const answer = String(out ?? "").trim().replace(/^["']|["']$/g, "").slice(0, 120);
             if (!answer) { bad++; if (why.length < 3) why.push("empty reply"); continue; }
             const { error: e2 } = await admin.from("problem_answers")
