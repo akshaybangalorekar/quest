@@ -683,3 +683,22 @@ footer{font-size:11.5px; color:var(--faint); padding:0 20px 24px}
   .top{padding:14px 14px 10px}
   .top h1{font-size:17.5px}
 }
+
+/* ---------- quiet craft: the scan rows as marks, not sentences ----------
+   Ma — space does the work. One dot for state, one tick per page, one line of facts. */
+.fileRow{padding:16px 0;border-top:1px solid var(--line-soft)}
+.fileRow:first-child{border-top:0}
+.fileTop{display:flex;align-items:center;gap:9px}
+.fileName{flex:1;font-size:14.5px;font-weight:560;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.filePages{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.fileDot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:#d4d6de}
+.fileDot.read{background:var(--ok)}
+.fileDot.reading{background:var(--warn);animation:pulse 1.8s ease-in-out infinite}
+.fileDot.stopped{background:var(--bad)}
+.fileDot.not{background:#d4d6de}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ticks{display:flex;gap:3px;margin-top:9px;flex-wrap:wrap}
+.ticks i{height:4px;flex:1 1 8px;min-width:5px;border-radius:2px;background:#eceef3}
+.ticks i.on{background:#c3c7d4}
+.ticks i.now{background:var(--warn)}
+.fileFacts{margin-top:9px;font-size:12px;color:var(--faint);letter-spacing:.01em}

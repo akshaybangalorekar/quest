@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.48.0";
+import * as data from "./data.js?v=3.49.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -315,7 +315,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.48.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.49.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2159,45 +2159,29 @@ async function loadPapersToRead() {
     const left = (r.pages_total ?? 0) - (r.pages_done ?? 0);
     const total = r.pages_total ?? 0;
     const done = r.pages_done ?? 0;
-    const pct = total ? Math.round((done / total) * 100) : 0;
     const finished = total > 0 && left === 0 && r.status !== "failed";
-    const word = r.status === "failed" ? "Stopped partway"
-      : finished ? "Reading done"
-      : total === 0 ? "Not read yet"
-      : left > 0 && r.status === "running" ? "Reading"
-      : "Paused";
-    const pill = finished ? `<span class="pill ok" style="margin-left:8px">done</span>`
-      : r.status === "failed" ? `<span class="pill red" style="margin-left:8px">stopped</span>`
-      : total === 0 ? `<span class="pill grey" style="margin-left:8px">not read</span>`
-      : `<span class="pill amber" style="margin-left:8px">reading</span>`;
-    const state = total === 0
-      ? (r.questions > 0 ? `${r.questions} questions in the bank` : "not read yet")
-      : `${done} of ${total} pages · ${left === 0 ? "all read" : left + " to go"}`;
-    S.openStatus = S.openStatus ?? new Set();
-    const statusIcon = `<details class="fileStatus"${S.openStatus.has(r.id) ? " open" : ""}
-        data-action="toggleFileStatus" data-a0="${r.id}"><summary title="What was read">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/>
-          <path d="M12 8v.01M11 12h1v4h1"/></svg>
-      </summary>
-      <div class="sub" style="margin-top:6px;line-height:1.7">
-        Questions read: <b>${r.questions ?? 0}</b><br>
-        With a figure: <b>${r.diagrams ?? 0}</b><br>
-        With an answer: <b>${r.answers ?? 0}</b>
-        ${(r.questions ?? 0) > (r.answers ?? 0) ? `<br>Still to answer: <b>${(r.questions ?? 0) - (r.answers ?? 0)}</b>` : ""}
+    const state = r.status === "failed" ? "stopped" : finished ? "read" : total === 0 ? "not read" : "reading";
+
+    // one tick per page: read, reading, or waiting. No sentences.
+    const ticks = total
+      ? Array.from({ length: total }, (_, i) =>
+          `<i class="${i < done ? "on" : i === done && state === "reading" ? "now" : ""}"></i>`).join("")
+      : `<i class="now"></i>`;
+    const facts = [
+      r.questions ? `${r.questions} questions` : null,
+      r.diagrams ? `${r.diagrams} figures` : null,
+      (r.questions ?? 0) > (r.answers ?? 0) ? `${r.questions - r.answers} unanswered` : null,
+    ].filter(Boolean).join(" · ");
+
+    return `<div class="fileRow">
+      <div class="fileTop">
+        <span class="fileDot ${state}"></span>
+        <span class="fileName">${esc(r.title)}</span>
+        <span class="filePages">${total ? `${done}/${total}` : "—"}</span>
       </div>
-    </details>`;
-    return `<div class="bar" style="justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)">
-      <div style="flex:1 1 260px">
-        <b>${esc(r.title)}</b> ${pill} ${statusIcon}
-        <div class="sub">${esc(r.exam)} · ${esc(state)}</div>
-        ${total ? `<div class="rowProg"><span style="width:${pct}%"></span></div>` : ""}
-        <div class="sub" style="margin-top:2px"><b>${esc(word)}</b>${word !== "Read" && S.lastReadError ? ` — ${esc(String(S.lastReadError).slice(0, 90))}` : ""}${
-          r.questions ? ` · ${r.questions} questions` : ""}${
-          r.diagrams ? ` · ${r.diagrams} with a figure` : ""}${
-          (r.questions ?? 0) > (r.answers ?? 0) ? ` · ${(r.questions ?? 0) - (r.answers ?? 0)} still to answer` : ""}</div>
-      </div>
-      <div class="bar" style="gap:6px">
+      <div class="ticks">${ticks}</div>
+      ${facts ? `<div class="fileFacts">${facts}</div>` : ""}
+      <div class="bar" style="gap:6px;margin-top:10px">
         ${left > 0 ? `<button class="go small" title="Carry on from the page it stopped at — pages already read are skipped"
               data-action="retryReading" data-a0="${r.id}" data-a1="0">Continue reading</button>` : ""}
         <button class="ghost small" title="Read every page again from the start — for when the first reading was wrong"
