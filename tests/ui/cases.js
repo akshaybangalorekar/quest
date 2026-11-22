@@ -3,6 +3,22 @@
 
 window.CASES = [
   {
+    name: "the sign-in screen goes away once you are in",
+    async run({ assert, T }) {
+      window.__fixtures["truth"] = T.baseTruth();
+      T.show("signin");
+      await T.wait(10);
+      const pane = T.$("signin");
+      assert("the sign-in screen is on", pane && !pane.classList.contains("hidden"));
+      assert("the page behind it cannot scroll", document.body.classList.contains("signing"));
+      T.show("track");
+      await T.wait(10);
+      assert("signing in hides it", pane.classList.contains("hidden"));
+      assert("and the page can scroll again", !document.body.classList.contains("signing"));
+    },
+  },
+
+  {
     name: "a tab says the same thing in the card and in the panel — child and parent at once",
     async run({ assert, T }) {
       const tab = { kind: "generated", chapter: 25, title: "Quest generated", questions: 10,
