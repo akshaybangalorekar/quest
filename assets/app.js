@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.57.0";
+import * as data from "./data.js?v=3.58.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.57.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.58.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -3685,16 +3685,19 @@ async function loadWhatsNew(family) {
   S.tabs = all;
 
   // exactly two numbers: not attempted, and attempted
-  const tabCard = (t) => `
-    <button class="tabCard" data-action="openTab" data-a0="${t.chapter}" data-a1="${esc(t.title)}"
+  const tabCard = (t) => {
+    const f = tabFacts(t, "child");
+    return `
+    <button class="tabCard" data-action="openTab" data-a0="${t.chapter}" data-a1="${esc(t.title)}" data-a2="child"
       style="flex:0 0 190px;text-align:left;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff">
       <div style="font-weight:600;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         ${esc(t.title)}</div>
       <div class="chipRow" style="margin-top:8px">
-        <span class="chip grey"><b>${t.servable}</b> to do</span>
-        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted}</b> done</span>
+        <span class="chip grey">${esc(f.first)}</span>
+        <span class="chip ${f.done ? "green" : "grey"}">${esc(f.second)}</span>
       </div>
     </button>`;
+  };
 
   const uploads = all.filter((t) => t.kind === "upload");
   const made = all.filter((t) => t.kind === "generated");
@@ -3711,8 +3714,25 @@ async function loadWhatsNew(family) {
     <div id="tabDetail" style="margin-top:8px"></div>`;
 }
 
+/* ONE definition of what a tab says. His screen counts what he can do; the parent's counts what exists. */
+function tabFacts(t, audience) {
+  const child = audience === "child";
+  const total = child ? Number(t.servable ?? 0) : Number(t.questions ?? 0);
+  const done = Number(t.attempted ?? 0);
+  const pending = Math.max(0, total - done);
+  return {
+    total,
+    done,
+    pending,
+    first: `${pending} ${child ? "to do" : "not attempted"}`,
+    second: `${done} ${child ? "done" : "attempted"}`,
+    empty: child ? "Nothing to do here yet." : "Nothing servable in this tab yet.",
+    showing: (n) => `Showing ${n} of ${total}`,
+  };
+}
+
 /* what is inside a tab, and the one button that opens it for him */
-async function openTab(n, title) {
+async function openTab(n, title, audience) {
   const box = $("tabDetail");
   if (!box) return;
   const t = (S.tabs ?? []).find((x) => Number(x.chapter) === Number(n)
@@ -3729,21 +3749,22 @@ async function openTab(n, title) {
   box.innerHTML = `<div class="sub">Opening…</div>`;
   const { data } = await sb.rpc("tab_questions", { p_chapter: Number(n), p_limit: 12 });
   const rows = data ?? [];
-  const total = Number(t.servable ?? rows.length);   // what he can do, not what exists
+  const f = tabFacts(t, audience ?? (S.isParent ? "parent" : "child"));
+  const total = f.total || rows.length;
   const shown = rows.length;
 
   box.innerHTML = `
     <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:12px">
       <div style="font-weight:600;color:#c2691a">${esc(t.title ?? "this tab")}</div>
       <div class="chipRow" style="margin:8px 0">
-        <span class="chip grey"><b>${total}</b> to do</span>
-        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted ?? 0}</b> done</span>
+        <span class="chip grey">${esc(f.first)}</span>
+        <span class="chip ${f.done ? "green" : "grey"}">${esc(f.second)}</span>
       </div>
-      <div class="sub" style="margin-bottom:6px">Showing ${shown} of ${total}</div>
+      <div class="sub" style="margin-bottom:6px">${esc(f.showing(shown))}</div>
       <div style="max-height:220px;overflow:auto">
         ${rows.map((q, i) => `<div class="sub" style="padding:4px 0;border-bottom:1px solid var(--line)">
           ${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</div>`).join("")
-          || `<div class="sub">Nothing to do here yet.</div>`}
+          || `<div class="sub">${esc(f.empty)}</div>`}
       </div>
       <div class="bar" style="margin-top:10px">
         <button class="go small" data-action="startChapter" data-a0="${Number(n)}">Open this for him →</button>
@@ -5277,7 +5298,7 @@ registerActions({
     if (S.openStatus.has(id)) S.openStatus.delete(id); else S.openStatus.add(id);
   },
 
-  openTab: (el) => openTab(el.dataset.a0, el.dataset.a1),
+  openTab: (el) => openTab(el.dataset.a0, el.dataset.a1, el.dataset.a2),
   pageCrop,
 
   keepOutOfTurn: async () => {
@@ -5387,7 +5408,7 @@ api = {
   askCoachWhatNow, runCoachPlan, scanContent, applyContent, forgotPassword, saveNewPassword,
   openTrack, startMock, runExam, beginWork, startSolo, openDash,
   readPaper, extractOne, updateDest, buildScript, toggleMic, askDoubt, handlePhoto,
-  openJournal, openFormula, tickFormula, openPad, padKey, padDone, closePad, useSystemKeyboard, paintPad, buildTracks, fileToBase64, loadParent, paintTopProgress, checkRunningJob, needsFigure, openPaper, pickOption, uploadAndRead, dismissNote, paintNote, paintOptions, testMic, freshCopy, paintDiag, growSay, stickBottom, bubble, checkReset, startPlacement, solveBlanks, paintActions, rich, startChapter, backToCoach, startThinking, resumeSession, returnToSession, backButton, leavePaper, createChild, deleteChild, removeParent, retryReading, preparePages, generateFor, printQuestions, startDeleteAccount, loadParents, saveOriginal, stageFiles, openHelp, openTimetable, toneForCount, paintWalletBanner, gateLabel, check, endSession, readSessionFromServer, autoFigure, startChapter, backToCoach, enqueue, refreshVisible, afterWrite, findSources, autoTrain, trainNow, verifyBank, loadTraining, addTrainingSource, toggleTrainingSource, resumePaper, closeEmptyPaper, beginNow, checkExamDates, loadAlertTo, testAlertEmail, addAlertTo, removeAlertTo, paintDateBanner, dismissDateBanner, loadChat, keepChat, parentDictate, addFromChat, formatCoachHtml, wipe, loadTough, paintExamTag, loadWhatsNew, openTab, keepBankAhead, loadRequests, writeMoreQuestions, wantsMoreQuestions, quizReady, askForEarlyMock, takePhoto, askPhotoReason, strandMode, strandModeChanged, cutFromPage, freshPill, beep, uploadAndRead, deletePaper, buildTracks, journeyChart, loadPapersToRead, runServerQueue, editDate, setExamDate, saveName, savePassword, saveChildPassword, loadAccount
+  openJournal, openFormula, tickFormula, openPad, padKey, padDone, closePad, useSystemKeyboard, paintPad, buildTracks, fileToBase64, loadParent, paintTopProgress, checkRunningJob, needsFigure, openPaper, pickOption, uploadAndRead, dismissNote, paintNote, paintOptions, testMic, freshCopy, paintDiag, growSay, stickBottom, bubble, checkReset, startPlacement, solveBlanks, paintActions, rich, startChapter, backToCoach, startThinking, resumeSession, returnToSession, backButton, leavePaper, createChild, deleteChild, removeParent, retryReading, preparePages, generateFor, printQuestions, startDeleteAccount, loadParents, saveOriginal, stageFiles, openHelp, openTimetable, toneForCount, paintWalletBanner, gateLabel, check, endSession, readSessionFromServer, autoFigure, startChapter, backToCoach, enqueue, refreshVisible, afterWrite, findSources, autoTrain, trainNow, verifyBank, loadTraining, addTrainingSource, toggleTrainingSource, resumePaper, closeEmptyPaper, beginNow, checkExamDates, loadAlertTo, testAlertEmail, addAlertTo, removeAlertTo, paintDateBanner, dismissDateBanner, loadChat, keepChat, parentDictate, addFromChat, formatCoachHtml, wipe, loadTough, paintExamTag, loadWhatsNew, openTab, tabFacts, keepBankAhead, loadRequests, writeMoreQuestions, wantsMoreQuestions, quizReady, askForEarlyMock, takePhoto, askPhotoReason, strandMode, strandModeChanged, cutFromPage, freshPill, beep, uploadAndRead, deletePaper, buildTracks, journeyChart, loadPapersToRead, runServerQueue, editDate, setExamDate, saveName, savePassword, saveChildPassword, loadAccount
 };
 } catch (e) { console.warn("handler list incomplete:", e.message); }
 for (const [k, v] of Object.entries(api)) if (typeof v === "function") window[k] = v;
