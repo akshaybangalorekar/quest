@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.77.0";
+import * as data from "./data.js?v=3.78.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.77.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.78.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -483,7 +483,24 @@ async function openTimetable() {
       <span class="bar2" style="width:80px"><i style="width:${t.preparedness}%"></i></span>
     </div>`;
 
-  box.innerHTML = rows.map((x) => {
+  // the one line a family needs at the top: what is nearest, and what to do about it
+  const soon = [...rows].filter((x) => x.exam_on).sort((a, b) => String(a.exam_on).localeCompare(String(b.exam_on)))[0];
+  const strip = soon ? (() => {
+    const k = String(soon.family ?? soon.label).toLowerCase();
+    const c = (S.examCounts ?? []).find((r) => String(r.exam).toLowerCase() === k) ?? {};
+    const topics = soon.rows ?? [];
+    const nextTopic = topics.find((t) => (t.preparedness ?? 0) < 60 && (t.questions ?? 0) > 0);
+    const when = new Date(soon.exam_on).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+    return `<div class="card" style="padding:16px 18px;margin-bottom:12px">
+      <div class="k">Next exam</div>
+      <div style="font-size:17px;font-weight:640;margin-top:2px">${esc(soon.label)} · ${esc(when)}</div>
+      <div class="sub" style="margin-top:2px">${soon.days_left ?? 0} days away · ${c.ready ?? 0} of ${c.total ?? 0} questions ready</div>
+      ${nextTopic ? `<div class="sub" style="margin-top:8px">Next to work on: <b>${esc(String(nextTopic.title).split(" · ").pop())}</b>
+        — ${nextTopic.questions} questions, ${nextTopic.preparedness ?? 0}% ready</div>` : ""}
+    </div>`;
+  })() : "";
+
+  box.innerHTML = strip + rows.map((x) => {
     const done = x.topics_done ?? 0, all = x.topics_all ?? 0, behind = x.behind ?? 0;
     const due = x.due_by_now ?? 0;
     const verdict = behind > 0 ? `${behind} behind` : done >= due && due > 0 ? "on track" : done > due ? "ahead" : "not started";
