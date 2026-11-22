@@ -3,6 +3,38 @@
 
 window.CASES = [
   {
+    name: "a tab says the same thing in the card and in the panel — child and parent at once",
+    async run({ assert, T }) {
+      const tab = { kind: "generated", chapter: 25, title: "Quest generated", questions: 10,
+                    servable: 6, fresh: 10, attempted: 2, to_check: 4, verified: 0 };
+
+      // what the words should be, from the one definition
+      const child = window.tabFacts ? window.tabFacts(tab, "child") : null;
+      const parent = window.tabFacts ? window.tabFacts(tab, "parent") : null;
+      assert("one definition decides the words", !!child && !!parent);
+      assert("his screen counts what he can do", child && child.total === 6 && /to do/.test(child.first));
+      assert("the parent's counts what exists", parent && parent.total === 10 && /not attempted/.test(parent.first));
+      assert("done is the same on both", child.done === parent.done && child.done === 2);
+
+      // and the screens agree with that definition
+      window.__fixtures["truth"] = T.baseTruth();
+      window.__fixtures["tabs_view"] = [tab];
+      window.__fixtures["tab_questions"] = [{ idx: 1, prompt: "A sample question", status: "provisional", has_figure: false }];
+      T.show("track");
+      await T.wait(40);
+      await window.loadWhatsNew("olympiad");
+      await T.wait(20);
+      const cardText = T.$("genList")?.textContent ?? "";
+      assert("the card speaks his language", /to do/.test(cardText) && !/not attempted/.test(cardText));
+      await window.openTab(25, "Quest generated");
+      await T.wait(20);
+      const panelText = T.$("tabDetail")?.textContent ?? "";
+      assert("the panel speaks the same language as the card", /to do/.test(panelText) && !/not attempted/.test(panelText));
+      assert("and says how many are shown", /Showing \d+ of \d+/.test(panelText));
+    },
+  },
+
+  {
     name: "parent chat keeps its own thread",
     async run({ assert, T }) {
       const history = [
