@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.67.0";
+import * as data from "./data.js?v=3.68.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.67.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.68.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -3687,7 +3687,7 @@ async function loadWhatsNew(family) {
   const tabCard = (t) => {
     const f = tabFacts(t, "child");
     return `
-    <button class="tabCard" data-action="openTab" data-a0="${t.chapter}" data-a1="${esc(t.title)}" data-a2="child"
+    <button class="tabCard" data-action="openTab" data-a0="${t.chapter}" data-a1="${esc(t.title)}" data-a2="child" data-a3="${t.paper_id ?? ""}"
       style="flex:0 0 190px;text-align:left;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff">
       <div style="font-weight:600;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         ${esc(t.title)}</div>
@@ -3731,7 +3731,7 @@ function tabFacts(t, audience) {
 }
 
 /* what is inside a tab, and the one button that opens it for him */
-async function openTab(n, title, audience) {
+async function openTab(n, title, audience, paperId) {
   const box = $("tabDetail");
   if (!box) return;
   const t = (S.tabs ?? []).find((x) => Number(x.chapter) === Number(n)
@@ -3746,7 +3746,8 @@ async function openTab(n, title, audience) {
   });
 
   box.innerHTML = `<div class="sub">Opening…</div>`;
-  const { data } = await sb.rpc("tab_questions", { p_chapter: Number(n), p_limit: 12 });
+  const paper = paperId ? Number(paperId) : (t.paper_id ?? null);
+  const { data } = await sb.rpc("tab_questions", { p_chapter: Number(n), p_limit: 20, p_paper: paper });
   const rows = data ?? [];
   const f = tabFacts(t, audience ?? (S.isParent ? "parent" : "child"));
   const total = f.total || rows.length;
@@ -3764,9 +3765,9 @@ async function openTab(n, title, audience) {
         </button>`).join("")
           || `<div class="sub">${esc(f.empty)}</div>`}
       </div>
-      <div class="bar" style="margin-top:10px">
-        <button class="go small" data-action="startChapter" data-a0="${Number(n)}">Open this for him →</button>
-      </div>
+      ${shown ? `<div class="bar" style="margin-top:10px">
+        <button class="go small" data-action="startChapter" data-a0="${Number(n)}">Start here →</button>
+      </div>` : ""}
     </div>`;
 }
 
@@ -5296,7 +5297,7 @@ registerActions({
     if (S.openStatus.has(id)) S.openStatus.delete(id); else S.openStatus.add(id);
   },
 
-  openTab: (el) => openTab(el.dataset.a0, el.dataset.a1, el.dataset.a2),
+  openTab: (el) => openTab(el.dataset.a0, el.dataset.a1, el.dataset.a2, el.dataset.a3),
   pageCrop,
 
   keepOutOfTurn: async () => {
