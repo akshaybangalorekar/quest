@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.75.0";
+import * as data from "./data.js?v=3.76.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.75.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.76.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -1388,7 +1388,8 @@ function paintActions() {
 }
 
 /* she sends him to a chapter; when he is done he comes back to her */
-async function startChapter(n) {
+async function startChapter(n, atIdx) {
+  S.startAt = atIdx ? Number(atIdx) : null;
   await startSolo(n);
   S.returnToCoach = true;
 }
@@ -3754,7 +3755,7 @@ async function openTab(n, title, audience, paperId) {
       <div style="font-weight:600;color:#c2691a">${esc(t.title ?? "this tab")}</div>
       ${shown < total ? `<div class="sub" style="margin-bottom:6px">${esc(f.showing(shown))}</div>` : ""}
       <div style="max-height:220px;overflow:auto">
-        ${rows.map((q, i) => `<button class="qRow" data-action="startChapter" data-a0="${Number(n)}"
+        ${rows.map((q, i) => `<button class="qRow" data-action="startQuestion" data-a0="${Number(q.chapter ?? n)}" data-a1="${q.idx}"
             title="Start here — she picks up from this question"
             style="display:block;width:100%;text-align:left;border:0;background:#fff;border-bottom:1px solid var(--line);padding:9px 0">
           <span class="sub">${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</span>
@@ -4041,6 +4042,13 @@ async function startSolo(chapterArg) {
     bubble("coach", "Something went wrong loading the questions: " + e.message);
     return;
   }
+  // start where he pointed, not at the top of the chapter
+  if (S.startAt) {
+    const want = Number(S.startAt);
+    const at = S.script.findIndex((x) => x.type === "question" && Number(x.data?.idx) === want);
+    if (at > 0) S.si = at;
+    S.startAt = null;
+  }
   if (!S.script.length) {
     bubble("coach", "Nothing left in this chapter — every question is answered. Take the quiz, or pick another chapter.");
     const nx = document.createElement("div");
@@ -4225,6 +4233,13 @@ async function beginWork() {
   S.pendingStart = null;
   document.getElementById("startBar")?.remove();
   await buildScript(p.lane, p.forceMode);
+  // start where he pointed, not at the top of the chapter
+  if (S.startAt) {
+    const want = Number(S.startAt);
+    const at = S.script.findIndex((x) => x.type === "question" && Number(x.data?.idx) === want);
+    if (at > 0) S.si = at;
+    S.startAt = null;
+  }
   if (!S.script.length) {
     bubble("coach", "There is nothing left to do in this chapter — every question is answered. Take the quiz, or move on.");
     return;
@@ -5296,6 +5311,7 @@ registerActions({
   },
 
   openTab: (el) => openTab(el.dataset.a0, el.dataset.a1, el.dataset.a2, el.dataset.a3),
+  startQuestion: (el) => startChapter(el.dataset.a0, el.dataset.a1),
   pageCrop,
 
   keepOutOfTurn: async () => {
