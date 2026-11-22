@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.71.0";
+import * as data from "./data.js?v=3.72.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.71.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.72.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -477,7 +477,7 @@ async function openTimetable() {
     <div class="ttRow">
       <span class="dot ${t.preparedness >= 60 ? "green" : t.preparedness > 0 ? "amber" : "grey"}"></span>
       <span class="ttTopic">${esc(String(t.title).split(" · ").pop())}
-        <span class="sub">${t.questions ? `${t.questions} questions` : "no questions yet"}</span></span>
+        <span class="sub">${t.questions ? `${t.questions} question${t.questions === 1 ? "" : "s"}` : "nothing yet"}</span></span>
       <span class="ttTarget">${t.target_on
         ? new Date(t.target_on).toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : "—"}</span>
       <span class="bar2" style="width:80px"><i style="width:${t.preparedness}%"></i></span>
@@ -536,7 +536,7 @@ async function openTimetable() {
             <span class="secName">${esc(sec.part)}</span>
             <span class="secMin">${sec.minutes} min</span>
             <span class="secQ">${loaded ? `${loaded} q` : "no questions"}</span>
-            <span class="secTopics" title="${esc(names.join(", "))}">${own.length ? `${ready}/${own.length} ready · ${esc(shown)}` : ""}</span>
+            <span class="secTopics" title="${esc(names.join(", "))}">${own.length ? `${ready} ready${shown ? ` · ${esc(shown)}` : ""}` : ""}</span>
             <span class="bar2 secBar"><i style="width:${pctSec}%"></i></span>
           </div>
           ${official.length ? `<div class="secChips">${official.map((t) =>
@@ -560,9 +560,9 @@ async function openTimetable() {
         <span class="ttName">${esc(x.label)}</span>
         <span class="chip ${toneForCount(left)}"
               title="${examCount} questions · ${solvedCount} attempted · ${left} not attempted yet. ${left === 0 ? "Nothing left to practise on." : left < 30 ? "Thinning: under 30 unsolved." : "A healthy queue."}">
-          <b>${examCount}</b> questions · <b>${examReady}</b> ready</span>
+          <b>${examCount}</b> question${examCount === 1 ? "" : "s"}${examReady < examCount ? ` · ${examReady} ready` : ""}</span>
         <span class="chip grey" title="${esc(x.label)} sits on ${esc(examWhen)}"><b>${x.days_left ?? 0}</b> days</span>
-        <span class="ttMeta" style="margin-left:auto">${done} of ${all} topics</span>
+        ${all ? `<span class="ttMeta" style="margin-left:auto">${done} of ${all} topics</span>` : ""}
       </div>
       <div class="bar2" style="margin:8px 0 4px"><i style="width:${pct}%"></i></div>
       ${mine.length ? paper : `<details class="ttMore"><summary>the topics</summary>
@@ -2586,7 +2586,7 @@ async function goParent() {
         <span class="ttName">${esc(fam)}</span>
         <span class="chip ${toneForCount(pipeRow.left_to_solve ?? examCount)}"
               title="${examCount} questions · ${pipeRow.solved ?? 0} solved · ${pipeRow.left_to_solve ?? examCount} left to solve. ${(pipeRow.left_to_solve ?? examCount) === 0 ? "Nothing left to practise on." : (pipeRow.left_to_solve ?? examCount) < 30 ? "Thinning: under 30 unsolved." : "A healthy queue."}">
-          <b>${examCount}</b> questions · <b>${examReady}</b> ready</span>
+          <b>${examCount}</b> question${examCount === 1 ? "" : "s"}${examReady < examCount ? ` · ${examReady} ready` : ""}</span>
         <span class="chip grey" title="${esc(fam)} sits on ${esc(when)}"><b>${f.days_left ?? 0}</b> days</span>
         <span class="ttMeta" style="margin-left:auto">${coveredMin} of ${sitsMin} min testable</span>
       </div>
@@ -3831,7 +3831,7 @@ async function paintTrackCard(id) {
     return `<div class="ttRow" ${has ? `data-action="openChapter" data-a0="${t.n}" style="cursor:pointer"` : ""}>
       <span class="dot ${t.preparedness >= 60 ? "green" : t.preparedness > 0 ? "amber" : "grey"}"></span>
       <span class="ttTopic">${esc(String(t.title).split(" · ").pop())}
-        <span class="sub">${has ? `${t.questions} questions` : "no questions yet"}</span></span>
+        <span class="sub">${has ? `${t.questions} question${t.questions === 1 ? "" : "s"}` : "nothing yet"}</span></span>
       <span class="ttTarget">${has ? (t.tried ? `${t.correct}/${t.tried} right` : "not tried") : ""}</span>
       <span class="bar2" style="width:80px"><i style="width:${t.preparedness}%"></i></span>
     </div>`;
