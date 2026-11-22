@@ -123,6 +123,18 @@ Deno.serve(async (req) => {
     const path = String(row.path ?? "");
     const isText = /(text|html|xml|json)/i.test(String(blob.type ?? "")) || /\.(html?|txt|md|json|xml)$/i.test(path);
     let b64 = "", pageText = "";
+
+    // an HTML document is read as a book: sections, headings, images — not as one blob of text
+    if (isText && /<h[1-4][\s>]/i.test(new TextDecoder("utf-8").decode(buf))) {
+      const book = readHtmlBook(new TextDecoder("utf-8").decode(buf));
+      const { data: stored, error: sErr } = await admin.rpc("store_doc_sections",
+        { p_paper: paper_id, p_sections: book });
+      if (sErr) return json({ error: sErr.message }, 400);
+      await admin.from("paper_pages").update({ done: true })
+        .eq("paper_id", paper_id).eq("page_no", page);
+      return json({ ok: true, kind: "book", ...(stored ?? {}), page });
+    }
+
     if (isText) {
       // a document is mostly markup: keep the words, drop the tags, and stay inside the model's limit
       pageText = new TextDecoder("utf-8").decode(buf)
@@ -243,6 +255,38 @@ Two things to check before you start:
     return json({ error: String(e) }, 500);
   }
 });
+
+/* headings become sections; each section keeps its words, its sample and its images */
+function readHtmlBook(html: string) {
+  const clean = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+
+  // split at every h1..h4, keeping the heading with what follows
+  const parts: { name: string; body: string }[] = [];
+  const re = /<h([1-4])[^>]*>([\s\S]*?)<\/h\1>/gi;
+  const heads: { at: number; end: number; name: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(clean))) {
+    heads.push({ at: m.index, end: re.lastIndex, name: m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() });
+  }
+  if (!heads.length) {
+    parts.push({ name: "Whole document", body: clean });
+  } else {
+    if (heads[0].at > 0) parts.push({ name: "Front matter", body: clean.slice(0, heads[0].at) });
+    heads.forEach((h, i) => {
+      const next = i + 1 < heads.length ? heads[i + 1].at : clean.length;
+      parts.push({ name: h.name || `Section ${i + 1}`, body: clean.slice(h.end, next) });
+    });
+  }
+
+  return parts.map((p) => {
+    const imgs = [...p.body.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map((x) => x[1]);
+    const words = p.body.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+    return { name: p.name.slice(0, 120), chars: words.length, images: imgs, sample: words.slice(0, 700) };
+  }).filter((x) => x.chars > 20 || x.images.length);
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
