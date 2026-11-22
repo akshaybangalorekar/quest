@@ -705,3 +705,35 @@ footer{font-size:11.5px; color:var(--faint); padding:0 20px 24px}
 .scanBar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .scanName{font-size:13.5px;font-weight:560;letter-spacing:-0.01em}
 .scanFacts{font-size:12px;color:var(--faint);margin-left:auto}
+
+/* ---------- Rajasthan / Gujarat palette ----------
+   Haldi marigold, Jaipur indigo, rani pink, peacock, vermilion. Bright, but
+   each colour keeps one meaning so the screen stays readable. */
+:root{
+  --acc:#1F3A93;          /* Jaipur indigo — the one action */
+  --acc-ink:#16296B;
+  --acc-soft:#EDF0FB;
+  --ok:#00796B;           /* peacock — good, done */
+  --ok-soft:#E4F3F1;
+  --warn:#E8A317;         /* haldi — working, watch */
+  --warn-soft:#FDF2DC;
+  --bad:#D81B60;          /* rani pink — stopped, wrong */
+  --bad-soft:#FCE7EF;
+  --ink:#171A26; --mut:#6B7080; --faint:#9AA0AE;
+  --line:#E8E9EF; --line-soft:#F1F2F6;
+}
+button.go{background:var(--acc)}
+button.go:hover{background:var(--acc-ink)}
+.chip.blue{background:var(--acc-soft); color:var(--acc-ink)} .chip.blue b{color:var(--acc-ink)}
+.chip.green{background:var(--ok-soft); color:var(--ok)} .chip.green b{color:var(--ok)}
+.chip.amber{background:var(--warn-soft); color:#8A5A00} .chip.amber b{color:#8A5A00}
+.chip.red{background:var(--bad-soft); color:var(--bad)} .chip.red b{color:var(--bad)}
+.fileDot.read{background:var(--ok)}
+.fileDot.reading{background:var(--warn); box-shadow:0 0 0 3px var(--warn-soft)}
+.fileDot.stopped{background:var(--bad)}
+.ticks i.on{background:var(--ok); opacity:.55}
+.ticks i.now{background:var(--warn)}
+.scanBar{background:linear-gradient(90deg, rgba(31,58,147,.05), rgba(232,163,23,.06) 70%, transparent);
+  border-radius:12px; padding:10px 12px}
+.scanState{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--acc)}
+.scanBar .fileDot.reading ~ .scanState{color:#8A5A00}

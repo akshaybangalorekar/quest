@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.51.0";
+import * as data from "./data.js?v=3.52.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -147,11 +147,13 @@ async function paintScanBanner() {
       const ticks = Array.from({ length: total }, (_, i) =>
         `<i class="${i < done ? "on" : i === done ? "now" : ""}"></i>`).join("");
       el.className = "";
+      const waiting = total - done;
       el.innerHTML = `<div class="scanBar">
         <span class="fileDot reading"></span>
+        <span class="scanState">Reading</span>
         <span class="scanName">${esc(one.title)}</span>
-        <span class="filePages">${done}/${total}</span>
-        <span class="scanFacts">${one.questions ?? 0} questions${one.diagrams ? ` · ${one.diagrams} figures` : ""}</span>
+        <span class="filePages">${done} of ${total} pages</span>
+        <span class="scanFacts">${waiting} to go · ${one.questions ?? 0} questions${one.diagrams ? ` · ${one.diagrams} figures` : ""}</span>
       </div>
       <div class="ticks" style="margin-top:8px">${ticks}</div>`;
       clearTimeout(scanTimer);
@@ -164,8 +166,9 @@ async function paintScanBanner() {
       el.className = "";
       el.innerHTML = `<div class="scanBar">
         <span class="fileDot read"></span>
-        <span class="scanName">${rows.length} file${rows.length === 1 ? "" : "s"} read</span>
-        <span class="scanFacts">${q} questions</span>
+        <span class="scanState">Read</span>
+        <span class="scanName">${rows.length} file${rows.length === 1 ? "" : "s"}</span>
+        <span class="scanFacts">${q} questions in the bank</span>
         <button class="link" data-action="dismissScanBanner">OK</button>
       </div>`;
       return;
@@ -178,14 +181,16 @@ async function paintScanBanner() {
     if (toCheck === 0 && unverified === 0 && verified > 0) {
       el.className = "";
       el.innerHTML = `<div class="scanBar"><span class="fileDot read"></span>
-        <span class="scanName">all checked</span>
+        <span class="scanState">Checked</span>
+        <span class="scanName">nothing waiting</span>
         <span class="scanFacts">${verified} verified${held ? ` · ${held} held back` : ""}</span></div>`;
       return;
     }
     el.className = "";
     el.innerHTML = `<div class="scanBar"><span class="fileDot ${toCheck ? "reading" : "read"}"></span>
-      <span class="scanName">${toCheck ? "checking" : "nothing running"}</span>
-      <span class="scanFacts">${verified} verified · ${unverified} unchecked · ${toCheck} to check${held ? ` · ${held} held` : ""}</span></div>`;
+      <span class="scanState">${toCheck ? "Checking" : "Idle"}</span>
+      <span class="scanName">${toCheck ? toCheck + " questions to check" : "everything read"}</span>
+      <span class="scanFacts">${verified} verified · ${unverified} unchecked${held ? ` · ${held} held` : ""}</span></div>`;
   } catch (_) {
     el.className = "hidden";
   }
@@ -290,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.51.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.52.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
