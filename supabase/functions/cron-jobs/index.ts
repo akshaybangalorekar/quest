@@ -151,7 +151,15 @@ Deno.serve(async (req) => {
               `Solve this maths question. Reply with one line only: the answer, as short as possible. No working.`,
               `Question: ${r.prompt}${opts}`, 0, 220);
             const answer = String(out ?? "").trim().replace(/^["']|["']$/g, "").slice(0, 120);
-            if (!answer) { bad++; if (why.length < 3) why.push("empty reply"); continue; }
+            if (!answer) {
+              bad++;
+              if (why.length < 3) why.push("could not be answered");
+              await admin.from("problems").update({
+                status: "failed",
+                status_note: "the coach could not answer it — it is probably missing a figure or a number",
+              }).eq("chapter", r.chapter).eq("idx", r.idx);
+              continue;
+            }
             const { error: e2 } = await admin.from("problem_answers")
               .insert({ chapter: r.chapter, idx: r.idx, answer, mark_mode: "llm" });
             if (e2) { bad++; if (why.length < 3) why.push(String(e2.message).slice(0, 90)); } else ok++;
