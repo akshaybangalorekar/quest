@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.55.0";
+import * as data from "./data.js?v=3.56.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.55.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.56.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -3691,8 +3691,8 @@ async function loadWhatsNew(family) {
       <div style="font-weight:600;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         ${esc(t.title)}</div>
       <div class="chipRow" style="margin-top:8px">
-        <span class="chip grey"><b>${t.fresh}</b> not attempted</span>
-        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted}</b> attempted</span>
+        <span class="chip grey"><b>${t.servable}</b> to do</span>
+        <span class="chip ${Number(t.attempted) ? "green" : "grey"}"><b>${t.attempted}</b> done</span>
       </div>
     </button>`;
 
