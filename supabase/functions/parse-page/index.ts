@@ -125,6 +125,43 @@ Deno.serve(async (req) => {
     let b64 = "", pageText = "";
 
     // an HTML document is read as a book: sections, headings, images — not as one blob of text
+    // a practice page: read its questions, answers and drawings straight from the markup
+    if (isText) {
+      const raw = new TextDecoder("utf-8").decode(buf);
+      const qs = readHtmlQuestions(raw);
+      const withSomething = qs.filter((q) => q.answer || q.svg).length;
+      if (qs.length >= 5 && withSomething >= Math.ceil(qs.length / 2)) {
+        const { data: exams } = await admin.from("exams").select("id, key");
+        const exam = (exams ?? []).find((e: any) =>
+          String(paper.exam ?? "").toLowerCase().includes(String(e.key).toLowerCase()))
+          ?? (exams ?? []).find((e: any) => e.key === "olympiad");
+        const { data: hold } = await admin.from("strands").select("n")
+          .eq("exam_id", exam?.id ?? 0).ilike("title", "%To be sorted%").maybeSingle();
+        if (hold?.n) {
+          let added = 0, withFigure = 0;
+          for (const q of qs) {
+            const { data: idx } = await admin.rpc("next_question_idx", { p_chapter: hold.n });
+            const { error: pErr } = await admin.from("problems").insert({
+              chapter: hold.n, idx, prompt: q.prompt, status: "provisional",
+              status_note: "read from a practice file, answer included",
+              source_ref: path.split("/").pop(), paper_id,
+              diagram_svg: q.svg, diagram_kind: q.svg ? "inline" : null,
+            });
+            if (pErr) continue;
+            added++; if (q.svg) withFigure++;
+            if (q.answer) {
+              await admin.from("problem_answers").insert({
+                chapter: hold.n, idx, answer: q.answer, mark_mode: "auto" });
+            }
+          }
+          await admin.from("paper_pages").update({ done: true })
+            .eq("paper_id", paper_id).eq("page_no", page);
+          await admin.rpc("fold_upload_strands");
+          return json({ ok: true, kind: "practice", questions: added, figures: withFigure, page });
+        }
+      }
+    }
+
     if (isText && /<h[1-4][\s>]/i.test(new TextDecoder("utf-8").decode(buf))) {
       const book = readHtmlBook(new TextDecoder("utf-8").decode(buf));
       const { data: stored, error: sErr } = await admin.rpc("store_doc_sections",
@@ -261,6 +298,36 @@ Two things to check before you start:
 });
 
 /* headings become sections; each section keeps its words, its sample and its images */
+
+/* A page built for practice usually says everything we need, in the markup:
+   the question, its answer, and its drawing. Read that instead of guessing. */
+function readHtmlQuestions(html: string) {
+  const clean = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+  const text = (x: string) => x.replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+
+  const blocks: string[] = [];
+  for (const m of clean.matchAll(/<(li|div|section)[^>]*class="[^"]*\bq(uestion)?\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/gi)) {
+    blocks.push(m[3]);
+  }
+  if (blocks.length < 5) return [];
+
+  const out: { prompt: string; answer: string | null; svg: string | null }[] = [];
+  for (const b of blocks) {
+    const svg = b.match(/<svg[\s\S]*?<\/svg>/i)?.[0] ?? null;
+    const ans = b.match(/<b>\s*Answer:?\s*<\/b>\s*([^<]+)/i)?.[1] ?? null;
+    const body = b.replace(/<div class="ans"[\s\S]*$/i, "");
+    const firstP = body.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? body;
+    const prompt = text(firstP).slice(0, 900);
+    if (prompt.length < 15) continue;
+    out.push({ prompt, answer: ans ? text(ans).slice(0, 200) : null, svg });
+  }
+  return out;
+}
+
 function readHtmlBook(html: string) {
   const clean = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
