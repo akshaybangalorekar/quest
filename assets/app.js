@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.53.0";
+import * as data from "./data.js?v=3.54.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.53.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.54.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -498,7 +498,8 @@ async function openTimetable() {
     const examCount = Number(cRow.total ?? fallbackX);   // the whole exam, not just what is servable
     const examReady = Number(cRow.ready ?? fallbackX);
     const pipe = (S.pipeline ?? []).find((p) => String(p.key).toLowerCase() === key) ?? {};
-    const left = Number(pipe.left_to_solve ?? examCount);
+    const solvedCount = Number(cRow.attempted ?? 0);
+    const left = Math.max(0, examCount - solvedCount);
     const solved = Number(pipe.solved ?? 0);
 
     // green: a healthy queue of unsolved questions. amber: thinning. orange: nothing left to practise on.
@@ -557,8 +558,8 @@ async function openTimetable() {
       <div class="ttHead">
         <span class="ttName">${esc(x.label)}</span>
         <span class="chip ${toneForCount(left)}"
-              title="${examCount} questions · ${examCount - left} solved · ${left} left to solve. ${left === 0 ? "Nothing left to practise on." : left < 30 ? "Thinning: under 30 unsolved." : "A healthy queue."}">
-          <b>${examCount}</b> questions · <b>${examCount - left}</b> solved</span>
+              title="${examCount} questions · ${solvedCount} attempted · ${left} not attempted yet. ${left === 0 ? "Nothing left to practise on." : left < 30 ? "Thinning: under 30 unsolved." : "A healthy queue."}">
+          <b>${examCount}</b> questions · <b>${examReady}</b> ready</span>
         <span class="chip grey" title="${esc(x.label)} sits on ${esc(examWhen)}"><b>${x.days_left ?? 0}</b> days</span>
         <span class="ttMeta" style="margin-left:auto">${done} of ${all} topics</span>
       </div>
@@ -2536,7 +2537,7 @@ async function goParent() {
     const pct = sitsMin ? Math.round((coveredMin / sitsMin) * 100) : 0;
 
     const pipeRowE = (S.pipeline ?? []).find((p) => String(p.key).toLowerCase() === syncKey) ?? {};
-    const pipeLeft = Number(pipeRowE.left_to_solve ?? examCount);
+    const pipeLeft = Math.max(0, examCount - Number(cRow2.attempted ?? 0));
     const pipeSolved = Number(pipeRowE.solved ?? 0);
 
     // empty is a flag on the one card, not a second copy of it
