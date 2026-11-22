@@ -791,3 +791,16 @@ button.go:hover{background:var(--acc-ink)}
   #signin .authCorner{right:12px; left:12px; bottom:12px; width:auto; padding:20px}
   .templeTag{left:14px; bottom:auto; top:14px; font-size:11px}
 }
+
+/* a smaller panel, so the temple is the subject and the form is a tool */
+#signin .authCorner{width:308px; padding:20px 20px 16px; border-radius:16px; right:28px; bottom:28px}
+#signin .authCorner .brand{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint)}
+#signin .authCorner .authTitle{font-size:17px; margin:4px 0 2px}
+#signin .authCorner .authSub{font-size:12px; margin-bottom:12px}
+#signin .authCorner .field label{font-size:11px; letter-spacing:.03em}
+#signin .authCorner input{padding:9px 11px; font-size:14px; border-radius:10px}
+#signin .authCorner .check{font-size:12px; margin:10px 0}
+#signin .authCorner button.go{padding:10px 16px; font-size:14px; min-height:38px; border-radius:10px}
+#signin .authCorner .forgotRow{margin-top:2px}
+#signin .authCorner .link{font-size:11.5px}
+#signin .authCorner details summary{font-size:11.5px}
