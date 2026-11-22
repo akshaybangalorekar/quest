@@ -807,8 +807,10 @@ button.go:hover{background:var(--acc-ink)}
 
 /* the temple fills the window: no tiling, no frame, no margins */
 #signin{padding:0!important; margin:0!important; max-width:none!important; width:100%!important}
-#signin:not(.hidden){display:block!important}
+#signin:not(.hidden){display:block!important; position:fixed!important; inset:0!important;
+  height:100dvh!important; max-height:100dvh!important; overflow:hidden!important; z-index:80}
 #signin.hidden{display:none!important}
+body.signing{overflow:hidden!important; height:100dvh!important}
 #signin .art{
   position:absolute!important; inset:0!important; width:100%!important; height:100%!important;
   margin:0!important; padding:0!important; border:0!important; border-radius:0!important;
