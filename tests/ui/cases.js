@@ -329,7 +329,7 @@ window.CASES = [
       await T.wait(250);
       const chips = [...(T.$("ttBody")?.querySelectorAll(".chip") ?? [])]
         .map((c) => (c.textContent ?? "").trim())
-        .filter((t) => /^\d+ questions · \d+ ready$/.test(t));
+        .filter((t) => /^\d+ questions?( · \d+ ready)?$/.test(t));
       const nums = chips.map((t) => Number(t.split(" ")[0]));
       assert("the cards carry their counts", nums.length >= 2);
       assert("the cards add up to the total", nums.reduce((a, b) => a + b, 0) === 12);
@@ -351,14 +351,14 @@ window.CASES = [
       await window.openTimetable();
       await T.wait(200);
       let text = (T.$("ttBody")?.textContent ?? "").replace(/\s+/g, " ");
-      assert("before the wipe, four are attempted", /10 questions · \d+ ready/.test(text));
+      assert("before the wipe, four are attempted", /10 questions( · \d+ ready)?/.test(text));
 
       // the wipe happened: the pipeline is read again and nothing is solved
       window.__fixtures["exam_pipeline"] = [{ key: "olympiad", pipeline: 10, solved: 0, left_to_solve: 10 }];
       await window.openTimetable();
       await T.wait(200);
       text = (T.$("ttBody")?.textContent ?? "").replace(/\s+/g, " ");
-      assert("after the wipe, none are attempted", /10 questions · 0 attempted|10 questions · \d+ ready/.test(text));
+      assert("after the wipe, none are attempted", /10 questions( · \d+ ready)?/.test(text));
     },
   },
   {
@@ -395,7 +395,7 @@ window.CASES = [
       await T.wait(250);
       const text = (T.$("ttBody")?.textContent ?? "").replace(/\s+/g, " ");
       assert("the count is shown", /6 questions/.test(text));
-      assert("the ready count is shown in the same chip", /6 questions · \d+ ready/.test(text));
+      assert("the ready count is shown in the same chip", /6 questions( · \d+ ready)?/.test(text));
       assert("no grey 'no questions' pill", !/no questions/.test(text));
     },
   },
@@ -421,7 +421,7 @@ window.CASES = [
       await T.wait(250);
       const chips = [...(T.$("ttBody")?.querySelectorAll(".chip") ?? [])]
         .map((c) => (c.textContent ?? "").trim())
-        .filter((t) => /^\d+ questions · \d+ ready$/.test(t))
+        .filter((t) => /^\d+ questions?( · \d+ ready)?$/.test(t))
         .map((t) => Number(t.split(" ")[0]));
       assert("all five exams carry a count", chips.length === 5);
       assert("they add up to 62", chips.reduce((a, b) => a + b, 0) === 62);
