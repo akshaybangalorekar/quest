@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
     const work = (claimed ?? []) as any[];
 
     let ok = 0, bad = 0, next = 0;
+    const why: string[] = [];
     const worker = async () => {
       for (;;) {
         const i = next++;
@@ -150,10 +151,10 @@ Deno.serve(async (req) => {
               `Solve this maths question. Reply with one line only: the answer, as short as possible. No working.`,
               `Question: ${r.prompt}${opts}`, 0, 60);
             const answer = String(out ?? "").trim().replace(/^["']|["']$/g, "").slice(0, 120);
-            if (!answer) { bad++; continue; }
+            if (!answer) { bad++; if (why.length < 3) why.push("empty reply"); continue; }
             const { error: e2 } = await admin.from("problem_answers")
               .insert({ chapter: r.chapter, idx: r.idx, answer, mark_mode: "llm" });
-            if (e2) bad++; else ok++;
+            if (e2) { bad++; if (why.length < 3) why.push(String(e2.message).slice(0, 90)); } else ok++;
           } else {
             const { data: full } = await admin.from("problems")
               .select("prompt, options, diagram_svg").eq("chapter", r.chapter).eq("idx", r.idx).maybeSingle();
@@ -169,7 +170,7 @@ Deno.serve(async (req) => {
               .eq("chapter", r.chapter).eq("idx", r.idx);
             if (verdict.state === "failed") bad++; else ok++;
           }
-        } catch (_e) { bad++; }
+        } catch (e) { bad++; if (why.length < 3) why.push(String((e as Error)?.message ?? e).slice(0, 90)); }
       }
     };
     await Promise.all(Array.from({ length: Math.min(lanes, work.length) }, worker));
@@ -186,7 +187,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ token: tok?.value, mode, limit: want, lanes, depth: depth + 1 }),
       }).catch(() => {});
     }
-    return json({ mode, lanes, claimed: work.length, ok, bad, left, chained, depth });
+    return json({ mode, lanes, claimed: work.length, ok, bad, why, left, chained, depth });
   }
 
   if (body?.mode === "answer_legacy") {
