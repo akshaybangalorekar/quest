@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.82.0";
+import * as data from "./data.js?v=3.83.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.82.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.83.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -686,6 +686,7 @@ async function loadTraining() {
   catch (e) { console.error("held back reasons failed:", e); S.heldBack = []; }
 
   const { data: jobs } = await sb.rpc("recent_jobs", { p_limit: 5 });
+  S.queueRunning = (jobs ?? []).some((j) => j.status === "running");
   const jobLine = (jobs ?? []).map((j) => {
     const when = new Date(j.started_at).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
     const d = j.detail ?? {};
@@ -750,7 +751,9 @@ async function loadTraining() {
       each one is marked on screen and on the printout until it is checked
     </div>` : ""}
     <div class="sub" style="margin-top:8px">${draft
-      ? `Checking the ${draft} still waiting — about ${minutes} minute${minutes === 1 ? "" : "s"}.`
+      ? (S.queueRunning
+          ? `Checking the ${draft} still waiting — about ${minutes} minute${minutes === 1 ? "" : "s"}.`
+          : `${draft} waiting to be checked. The checker is not running right now — it picks them up when the queue is started.`)
       : cleared < prov
         ? `Verified needs official material for that exam. Only ${(k.official_exams ?? []).length
             ? (k.official_exams ?? []).join(", ") : "no exam"} has any and it has not been read yet, so
@@ -3794,7 +3797,8 @@ async function openTab(n, title, audience, paperId) {
         ${rows.map((q, i) => `<button class="qRow" data-action="startQuestion" data-a0="${Number(q.chapter ?? n)}" data-a1="${q.idx}"
             title="Start here — she picks up from this question"
             style="display:block;width:100%;text-align:left;border:0;background:#fff;border-bottom:1px solid var(--line);padding:9px 0">
-          <span class="sub">${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}</span>
+          <span class="sub">${i + 1}. ${esc(q.prompt)}${q.has_figure ? " · has a figure" : ""}${
+            q.answer_by === "llm" ? " · answer worked out by the coach" : ""}</span>
         </button>`).join("")
           || `<div class="sub">${esc(f.empty)}</div>`}
       </div>
