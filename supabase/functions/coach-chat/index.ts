@@ -11,7 +11,7 @@
 // own technique notes, his weak areas and what he has done today — all read
 // from the database with his own login, so it can only see his rows.
 
-import { buildEnvelope, checkReply } from "./_shared/coach.ts";
+import { buildEnvelope, checkReply, NEW_RULES } from "./_shared/coach.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MODEL = "glm5.3-flash";
