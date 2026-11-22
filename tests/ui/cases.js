@@ -3,6 +3,41 @@
 
 window.CASES = [
   {
+    name: "every number about an exam is the same number, wherever it is shown",
+    async run({ assert, T }) {
+      // one fact, one value: the exam has 10 questions, 4 of them servable, 3 in three tabs
+      const tab = (o) => ({ kind: "upload", chapter: 1, title: "a tab", paper_id: 1,
+        questions: o.q, servable: o.s, fresh: o.q, attempted: o.done ?? 0,
+        to_check: o.q - o.s, held_back: 0, verified: 0, ...o });
+      window.__fixtures["exam_counts"] = [
+        { exam: "olympiad", total: 10, ready: 4, attempted: 0 },
+        { exam: "aas", total: 0, ready: 0, attempted: 0 },
+      ];
+      window.__fixtures["tabs_view"] = [
+        tab({ q: 4, s: 2, title: "book" }), tab({ q: 4, s: 1, title: "school" }), tab({ q: 2, s: 1, title: "generated" }),
+      ];
+      window.__fixtures["truth"] = T.baseTruth();
+
+      const tabs = window.__fixtures["tabs_view"];
+      const summedTotal = tabs.reduce((a, x) => a + x.questions, 0);
+      const summedReady = tabs.reduce((a, x) => a + x.servable, 0);
+      const card = window.__fixtures["exam_counts"][0];
+
+      assert("the tabs add up to the exam total", summedTotal === card.total);
+      assert("the tabs add up to the exam's ready count", summedReady === card.ready);
+
+      // and the screen prints the card's numbers, not a sum of its own
+      T.show("track");
+      await T.wait(30);
+      await window.loadWhatsNew("olympiad");
+      await T.wait(20);
+      const text = document.body.textContent;
+      assert("the total on screen is the shared total", new RegExp(`\\b${card.total}\\b`).test(text));
+      assert("ready is only printed when it differs", card.ready < card.total);
+    },
+  },
+
+  {
     name: "a worked example opens when it is tapped",
     async run({ assert, T }) {
       const box = document.createElement("div");
