@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.76.0";
+import * as data from "./data.js?v=3.77.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.76.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.77.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -1392,6 +1392,17 @@ async function startChapter(n, atIdx) {
   S.startAt = atIdx ? Number(atIdx) : null;
   await startSolo(n);
   S.returnToCoach = true;
+}
+
+/* out of a topic and back to the shelf it came from */
+async function backToTopics() {
+  clearInterval(S.budgetTimer);
+  $("budgetBar")?.classList.add("hidden");
+  $("backToTabs")?.classList.add("hidden");
+  S.script = []; S.si = 0; S.workMode = null; S.returnToCoach = false;
+  $("chatWrap").innerHTML = "";
+  const track = S.track ?? S.chapter ?? null;
+  if (track) await openTrack(track); else show("landing");
 }
 
 async function backToCoach() {
@@ -4029,6 +4040,7 @@ async function startSolo(chapterArg) {
   if (S.chapter && chapter !== S.chapter) clearSession();   // a new topic, a fresh page
   sb.rpc("log_visit", { p_chapter: chapter, p_source: "solo-practice" });
   S.workMode = "solo";
+  $("backToTabs")?.classList.remove("hidden");
   S.chat = []; S.qs = []; S.i = 0;
   $("chatWrap").innerHTML = "";
   show("session");
@@ -5311,6 +5323,7 @@ registerActions({
   },
 
   openTab: (el) => openTab(el.dataset.a0, el.dataset.a1, el.dataset.a2, el.dataset.a3),
+  backToTopics: () => backToTopics(),
   startQuestion: (el) => startChapter(el.dataset.a0, el.dataset.a1),
   pageCrop,
 
