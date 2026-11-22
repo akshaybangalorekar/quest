@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.72.1";
+import * as data from "./data.js?v=3.73.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.72.1";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.73.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -719,11 +719,11 @@ async function loadTraining() {
       <div style="width:${Math.round(failed / written * 100)}%;background:#D81B60"></div>
       <div style="width:${Math.round(draft / written * 100)}%;background:#E8A317"></div>
     </div>
-    <div class="chipRow" style="margin-top:8px">
-      <span class="chip ${cleared ? "green" : "grey"}"><b>${cleared}</b> verified</span>
-      <span class="chip grey"><b>${prov}</b> usable</span>
-      <span class="chip ${failed ? "red" : "grey"}"><b>${failed}</b> held back</span>
-      ${draft ? `<span class="chip amber"><b>${draft}</b> waiting</span>` : ""}
+    <div class="sub" style="margin-top:8px; line-height:1.9">
+      <b>${cleared}</b> checked against official material<br>
+      <b>${prov}</b> passed the check, but nothing official confirms them<br>
+      <b>${failed}</b> failed the check — he will never see these${draft ? `<br>
+      <b>${draft}</b> not checked yet` : ""}
     </div>
     <div class="sub" style="margin-top:8px">${draft
       ? `Checking the ${draft} still waiting — about ${minutes} minute${minutes === 1 ? "" : "s"}.`
