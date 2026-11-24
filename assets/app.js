@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.89.1";
+import * as data from "./data.js?v=3.90.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.89.1";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.90.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -719,8 +719,8 @@ async function loadTraining() {
   const pct = (n) => Math.round((n / total) * 100);
 
   // from where, and how far the checking has got — nothing else
-  const fromFiles = Number(k.upload_questions ?? 0);
-  const fromWeb = Math.max(0, Number(k.bank ?? servable + failed + draft) - fromFiles);
+  const fromFilesCount = Number(k.upload_questions ?? 0);
+  const fromWeb = Math.max(0, Number(k.bank ?? servable + failed + draft) - fromFilesCount);
   const checked = cleared + prov + failed;
   const written = Math.max(1, checked + draft);
   const donePct = Math.round((checked / written) * 100);
@@ -729,22 +729,30 @@ async function loadTraining() {
 
   // one bar, four states, and the key written next to it — no hovering, no guessing
   const STATE = [
-    { n: cleared, word: "confirmed", tone: "#4F7A4A", tint: "#EDF2E7",
+    { n: cleared, word: "confirmed", tone: "#4F7A4A",
       means: "checked against the official material for its exam" },
-    { n: prov, word: "usable", tone: "#8FAE86", tint: "#F1F5ED",
+    { n: prov, word: "usable", tone: "#8FAE86",
       means: "passed the check; no official material exists to confirm it" },
-    { n: failed, word: "held back", tone: "#A94A38", tint: "#F8E7E2",
+    { n: failed, word: "held back", tone: "#A94A38",
       means: "rejected by the check — never shown to him" },
-    { n: draft, word: "waiting", tone: "#B07D2B", tint: "#FAF0DC",
+    { n: draft, word: "waiting", tone: "#B07D2B",
       means: "written, not checked yet" },
   ].filter((x) => Number(x.n) > 0);
 
   const pctOf = (n) => Math.round((Number(n) / written) * 100);
-  const state = S.queueRunning ? "running" : "idle";
+
+  // is the machine able to work at all? an empty wallet is not "idle"
+  const creditsOut = k.credits_empty_at && (Date.now() - new Date(k.credits_empty_at).getTime()) < 86400000;
+  const state = creditsOut ? "stopped" : S.queueRunning ? "running" : "idle";
+
+  // where the answers came from — a different question from the four above, so a second bar
+  const answersTotal = Number(k.answers_total ?? 0);
+  const byCoach = Number(k.llm_answers ?? 0);
+  const fromFiles = Math.max(0, answersTotal - byCoach);
 
   $("trainStore").innerHTML = `
     <div class="sub" style="margin-bottom:10px">
-      <b>${fromFiles}</b> questions came from files you uploaded · <b>${fromWeb}</b> she found or wrote herself
+      <b>${fromFilesCount}</b> questions came from files you uploaded · <b>${fromWeb}</b> she found or wrote herself
     </div>
 
     <div class="k" style="margin:6px 0 6px">${written.toLocaleString()} questions in the bank</div>
@@ -764,27 +772,40 @@ async function loadTraining() {
         </div>`).join("")}
     </div>
 
-    <div style="margin-top:14px;display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;
-                background:${state === "running" ? "#EDF2E7" : "#FAF0DC"};border:1px solid ${state === "running" ? "#D5E0CA" : "#EEDCB8"}">
-      <span style="flex:none;width:9px;height:9px;border-radius:50%;background:${state === "running" ? "#4F7A4A" : "#B07D2B"}"></span>
-      <span style="font-size:13.5px;color:#3D3A34">
-        ${state === "running"
-          ? `Checking now — ${draft} to go${minutes ? `, about ${minutes} minute${minutes === 1 ? "" : "s"}` : ""}.`
-          : draft
-            ? `The checker is idle. ${draft} questions are waiting for it — it starts when the queue runs.`
-            : "The checker is idle and has nothing waiting."}
-      </span>
+    <div style="margin-top:16px" class="k">Where the answers came from</div>
+    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#EDE9DF">
+      <div style="width:${answersTotal ? Math.round((fromFiles / answersTotal) * 100) : 0}%;background:#4F7A4A"></div>
+      <div style="width:${answersTotal ? Math.round((byCoach / answersTotal) * 100) : 0}%;background:#B07D2B"></div>
+    </div>
+    <div style="margin-top:9px;display:grid;gap:6px">
+      <div style="display:flex;align-items:flex-start;gap:9px">
+        <span style="flex:none;width:11px;height:11px;border-radius:3px;background:#4F7A4A;margin-top:4px"></span>
+        <span style="font-size:14px"><b>${fromFiles.toLocaleString()}</b> came with the question, from your files</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:9px">
+        <span style="flex:none;width:11px;height:11px;border-radius:3px;background:#B07D2B;margin-top:4px"></span>
+        <span style="font-size:14px;line-height:1.4"><b>${byCoach.toLocaleString()}</b> were worked out by the coach
+          <span class="sub" style="display:block;margin-top:1px">each one says so on his screen and on the printout until it is checked</span></span>
+      </div>
     </div>
 
-    ${Number(k.llm_answers ?? 0) ? `
-    <div style="margin-top:10px;display:flex;align-items:flex-start;gap:9px">
-      <span style="flex:none;width:11px;height:11px;border-radius:3px;background:#B07D2B;margin-top:4px"></span>
-      <span style="font-size:13.5px;line-height:1.45">
-        <b>${Number(k.llm_answers).toLocaleString()}</b> answers were worked out by the coach, not taken from your files.
-        <span class="sub" style="display:block">Each one says so on his screen and on the printout until it is checked.</span>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;
+                background:${state === "stopped" ? "#F8E7E2" : state === "running" ? "#EDF2E7" : "#FAF0DC"};
+                border:1px solid ${state === "stopped" ? "#EBCBC1" : state === "running" ? "#D5E0CA" : "#EEDCB8"}">
+      <span style="flex:none;width:9px;height:9px;border-radius:50%;
+                   background:${state === "stopped" ? "#A94A38" : state === "running" ? "#4F7A4A" : "#B07D2B"}"></span>
+      <span style="font-size:13.5px;color:#3D3A34">
+        ${state === "stopped"
+          ? `The model has no credit, so nothing can be checked. ${draft} questions are waiting. Top up at sarvam.ai — it starts again by itself.`
+          : state === "running"
+            ? `Checking now — ${draft} to go${minutes ? `, about ${minutes} minute${minutes === 1 ? "" : "s"}` : ""}.`
+            : draft
+              ? `The checker runs every five minutes. ${draft} are waiting for the next pass.`
+              : "The checker has nothing waiting."}
       </span>
-    </div>` : ""}`;
+    </div>`;
 }
+
 
 
 /* read the sources, keep your uploads, and check the bank */
