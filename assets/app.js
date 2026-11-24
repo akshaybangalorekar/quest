@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.90.0";
+import * as data from "./data.js?v=3.91.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.90.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.91.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -631,44 +631,37 @@ async function loadTraining() {
       const rupee = (n) => "₹" + Number(n ?? 0).toFixed(2);
       const perFn = Object.entries(bal.calls_by_function ?? {})
         .map(([k, v]) => `${esc(k)} ${v}`).join(" · ") || "no calls today";
+      // one line of facts; everything else folded away until it is wanted
       $("spendCard").innerHTML = `
-        <div class="chipRow">
-          <span class="chip ${Number(bal.balance_inr) > 0 ? "green" : "orange"}"
-                title="Your Sarvam balance as you last entered it. Sarvam has no balance API, so this figure is yours to set.">
-            <b>${rupee(bal.balance_inr)}</b> balance</span>
-          <span class="chip blue" title="What the model has cost today, from the token counts the API returns.">
-            <b>${rupee(bal.today?.inr)}</b> today</span>
-          <span class="chip grey" title="The last seven days."><b>${rupee(bal.week?.inr)}</b> this week</span>
-          <span class="chip grey" title="Calls made today."><b>${bal.today?.calls ?? 0}</b> calls</span>
+        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;font-size:14px">
+          <span><b style="font-size:19px">${rupee(bal.today?.inr)}</b> <span class="sub">today</span></span>
+          <span><b>${rupee(bal.week?.inr)}</b> <span class="sub">this week</span></span>
+          <span><b>${bal.today?.calls ?? 0}</b> <span class="sub">calls</span></span>
+          <span style="margin-left:auto"><span class="sub">balance</span> <b>${rupee(bal.balance_inr)}</b></span>
         </div>
-        <details style="margin-top:8px"><summary style="list-style:none;cursor:pointer">
-          <span class="chip grey">how this is worked out</span></summary>
-          <div class="sub" style="margin-top:8px">Sarvam publishes no balance endpoint, so this app cannot read your
-            wallet — only your dashboard can. What it can do is count: every call records the tokens the API reports,
-            and the cost is those tokens at Sarvam's published rate for ${esc(bal.model)} — ₹13.50 per million sent,
-            ₹45 per million received. Today by task: ${perFn}.</div>
-          <div class="sub" style="margin-top:6px">If Sarvam answers a call with "no credits available", that is recorded
-            and shown as an alert, because it is the one balance signal the API gives.</div>
-          <div class="sub" style="margin-top:6px">Enter the balance from your dashboard so the low-balance alert can work.</div>
+        <details style="margin-top:10px"><summary style="list-style:none;cursor:pointer">
+          <span class="sub">Details and limits</span></summary>
+          <div class="sub" style="margin-top:8px">Sarvam has no balance endpoint, so this app cannot read your wallet.
+            It counts instead: every call records the tokens the API reports, priced at ₹13.50 per million sent and
+            ₹45 per million received for ${esc(bal.model)}. Today by task: ${perFn}.</div>
           <div class="bar" style="margin-top:8px">
-            <input id="balIn" type="number" step="1" min="0" placeholder="Balance ₹ from your dashboard" style="width:200px">
-            <button class="mini" data-action="saveBalance">Update balance</button>
+            <input id="balIn" type="number" step="1" min="0" placeholder="Balance ₹ from your dashboard" style="width:210px">
+            <button class="mini" data-action="saveBalance">Set balance</button>
           </div>
-          <div class="k" style="margin-top:12px;margin-bottom:4px">Limits</div>
-          <div class="bar" style="gap:8px;flex-wrap:wrap">
+          <div class="bar" style="gap:8px;flex-wrap:wrap;margin-top:10px">
             <label class="sub">Calls a day <input id="capCalls" type="number" min="0" step="10"
               value="${esc(String(S.limits?.daily_call_cap ?? 400))}" style="width:90px"></label>
             <label class="sub">₹ a day <input id="capSpend" type="number" min="0" step="1"
               value="${esc(String(S.limits?.daily_spend_cap_inr ?? 20))}" style="width:80px"></label>
-            <label class="sub">Alert at % of a day <input id="capPct" type="number" min="1" max="100" step="5"
-              value="${esc(String(S.limits?.alert_at_percent ?? 80))}" style="width:80px"></label>
+            <label class="sub">Alert at % <input id="capPct" type="number" min="1" max="100" step="5"
+              value="${esc(String(S.limits?.alert_at_percent ?? 80))}" style="width:70px"></label>
             <label class="sub">Alert below ₹ <input id="capBelow" type="number" min="0" step="1"
               value="${esc(String(S.limits?.alert_below_inr ?? 10))}" style="width:80px"></label>
-            <button class="mini" data-action="saveLimits">Save limits</button>
+            <button class="mini" data-action="saveLimits">Save</button>
           </div>
           <div class="sub" style="margin-top:6px">Used today: ${bal.today?.calls ?? 0} of
             ${esc(String(S.limits?.daily_call_cap ?? 400))} calls · ${rupee(bal.today?.inr)} of
-            ${rupee(S.limits?.daily_spend_cap_inr ?? 20)}. Calls stop when either cap is reached.</div>
+            ${rupee(S.limits?.daily_spend_cap_inr ?? 20)}.</div>
         </details>`;
     }
     if (bal?.low) {
@@ -727,7 +720,7 @@ async function loadTraining() {
   const leftToCheck = draft;
   const minutes = Math.ceil(leftToCheck / 3);   // the checker takes about three a minute
 
-  // one bar, four states, and the key written next to it — no hovering, no guessing
+  // four states, one bar, one line of numbers. The meanings are one tap away.
   const STATE = [
     { n: cleared, word: "confirmed", tone: "#4F7A4A",
       means: "checked against the official material for its exam" },
@@ -737,73 +730,56 @@ async function loadTraining() {
       means: "rejected by the check — never shown to him" },
     { n: draft, word: "waiting", tone: "#B07D2B",
       means: "written, not checked yet" },
-  ].filter((x) => Number(x.n) > 0);
-
+  ];
+  const live = STATE.filter((x) => Number(x.n) > 0);
   const pctOf = (n) => Math.round((Number(n) / written) * 100);
 
-  // is the machine able to work at all? an empty wallet is not "idle"
   const creditsOut = k.credits_empty_at && (Date.now() - new Date(k.credits_empty_at).getTime()) < 86400000;
   const state = creditsOut ? "stopped" : S.queueRunning ? "running" : "idle";
 
-  // where the answers came from — a different question from the four above, so a second bar
   const answersTotal = Number(k.answers_total ?? 0);
   const byCoach = Number(k.llm_answers ?? 0);
-  const fromFiles = Math.max(0, answersTotal - byCoach);
+  const answerFromFiles = Math.max(0, answersTotal - byCoach);
 
   $("trainStore").innerHTML = `
-    <div class="sub" style="margin-bottom:10px">
-      <b>${fromFilesCount}</b> questions came from files you uploaded · <b>${fromWeb}</b> she found or wrote herself
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+      <span style="font-size:22px;font-weight:650">${written.toLocaleString()}</span>
+      <span class="sub">questions · <b>${fromFilesCount}</b> from your files · <b>${fromWeb}</b> she found or wrote</span>
     </div>
 
-    <div class="k" style="margin:6px 0 6px">${written.toLocaleString()} questions in the bank</div>
-
-    <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;background:#EDE9DF">
-      ${STATE.map((x) => `<div style="width:${pctOf(x.n)}%;background:${x.tone}"></div>`).join("")}
+    <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;background:#EDE9DF;margin-top:10px">
+      ${live.map((x) => `<div style="width:${pctOf(x.n)}%;background:${x.tone}"></div>`).join("")}
     </div>
 
-    <div style="margin-top:12px;display:grid;gap:7px">
-      ${STATE.map((x) => `
-        <div style="display:flex;align-items:flex-start;gap:9px">
-          <span style="flex:none;width:11px;height:11px;border-radius:3px;background:${x.tone};margin-top:4px"></span>
-          <span style="font-size:14px;line-height:1.4">
-            <b>${Number(x.n).toLocaleString()}</b> ${x.word}
-            <span class="sub" style="display:block;margin-top:1px">${x.means}</span>
-          </span>
-        </div>`).join("")}
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:14px">
+      ${live.map((x) => `<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${x.tone};margin-right:6px"></span><b>${Number(x.n).toLocaleString()}</b> ${x.word}</span>`).join("")}
     </div>
 
-    <div style="margin-top:16px" class="k">Where the answers came from</div>
-    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#EDE9DF">
-      <div style="width:${answersTotal ? Math.round((fromFiles / answersTotal) * 100) : 0}%;background:#4F7A4A"></div>
-      <div style="width:${answersTotal ? Math.round((byCoach / answersTotal) * 100) : 0}%;background:#B07D2B"></div>
-    </div>
-    <div style="margin-top:9px;display:grid;gap:6px">
-      <div style="display:flex;align-items:flex-start;gap:9px">
-        <span style="flex:none;width:11px;height:11px;border-radius:3px;background:#4F7A4A;margin-top:4px"></span>
-        <span style="font-size:14px"><b>${fromFiles.toLocaleString()}</b> came with the question, from your files</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:9px">
-        <span style="flex:none;width:11px;height:11px;border-radius:3px;background:#B07D2B;margin-top:4px"></span>
-        <span style="font-size:14px;line-height:1.4"><b>${byCoach.toLocaleString()}</b> were worked out by the coach
-          <span class="sub" style="display:block;margin-top:1px">each one says so on his screen and on the printout until it is checked</span></span>
-      </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:14px;color:#6B6A63">
+      <span><b style="color:#1F1E1D">${answerFromFiles.toLocaleString()}</b> answers came with the question</span>
+      <span><b style="color:#B07D2B">${byCoach.toLocaleString()}</b> worked out by the coach</span>
     </div>
 
-    <div style="margin-top:14px;display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;
-                background:${state === "stopped" ? "#F8E7E2" : state === "running" ? "#EDF2E7" : "#FAF0DC"};
-                border:1px solid ${state === "stopped" ? "#EBCBC1" : state === "running" ? "#D5E0CA" : "#EEDCB8"}">
-      <span style="flex:none;width:9px;height:9px;border-radius:50%;
-                   background:${state === "stopped" ? "#A94A38" : state === "running" ? "#4F7A4A" : "#B07D2B"}"></span>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;background:${state === "stopped" ? "#F8E7E2" : state === "running" ? "#EDF2E7" : "#FAF0DC"};border:1px solid ${state === "stopped" ? "#EBCBC1" : state === "running" ? "#D5E0CA" : "#EEDCB8"}">
+      <span style="flex:none;width:9px;height:9px;border-radius:50%;background:${state === "stopped" ? "#A94A38" : state === "running" ? "#4F7A4A" : "#B07D2B"}"></span>
       <span style="font-size:13.5px;color:#3D3A34">
         ${state === "stopped"
-          ? `The model has no credit, so nothing can be checked. ${draft} questions are waiting. Top up at sarvam.ai — it starts again by itself.`
+          ? `No model credit — checking has stopped. ${draft} waiting. Top up at sarvam.ai and it resumes by itself.`
           : state === "running"
-            ? `Checking now — ${draft} to go${minutes ? `, about ${minutes} minute${minutes === 1 ? "" : "s"}` : ""}.`
+            ? `Checking now · ${draft} to go${minutes ? ` · about ${minutes} min` : ""}`
             : draft
-              ? `The checker runs every five minutes. ${draft} are waiting for the next pass.`
-              : "The checker has nothing waiting."}
+              ? `Idle · runs every 5 minutes · ${draft} waiting`
+              : "Idle · nothing waiting"}
       </span>
-    </div>`;
+    </div>
+
+    <details style="margin-top:10px"><summary style="list-style:none;cursor:pointer">
+      <span class="sub">What these mean</span></summary>
+      <div style="margin-top:8px;display:grid;gap:6px">
+        ${STATE.map((x) => `<div style="font-size:13.5px"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${x.tone};margin-right:7px"></span><b>${x.word}</b> <span class="sub">— ${x.means}</span></div>`).join("")}
+        <div class="sub" style="font-size:13px">An answer worked out by the coach is marked on his screen and on the printout until it is checked.</div>
+      </div>
+    </details>`;
 }
 
 
