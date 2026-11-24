@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.87.0";
+import * as data from "./data.js?v=3.88.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.87.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.88.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -727,39 +727,65 @@ async function loadTraining() {
   const leftToCheck = draft;
   const minutes = Math.ceil(leftToCheck / 3);   // the checker takes about three a minute
 
+  // one bar, four states, and the key written next to it — no hovering, no guessing
+  const STATE = [
+    { n: cleared, word: "confirmed", tone: "#4F7A4A", tint: "#EDF2E7",
+      means: "checked against the official material for its exam" },
+    { n: prov, word: "usable", tone: "#8FAE86", tint: "#F1F5ED",
+      means: "passed the check; no official material exists to confirm it" },
+    { n: failed, word: "held back", tone: "#A94A38", tint: "#F8E7E2",
+      means: "rejected by the check — never shown to him" },
+    { n: draft, word: "waiting", tone: "#B07D2B", tint: "#FAF0DC",
+      means: "written, not checked yet" },
+  ].filter((x) => Number(x.n) > 0);
+
+  const pctOf = (n) => Math.round((Number(n) / written) * 100);
+  const state = S.queueRunning ? "running" : "idle";
+
   $("trainStore").innerHTML = `
-    <div class="chipRow">
-      <span class="chip grey"><b>${fromFiles}</b> from your files</span>
-      <span class="chip grey"><b>${fromWeb}</b> from the web</span>
+    <div class="sub" style="margin-bottom:10px">
+      <b>${fromFiles}</b> questions came from files you uploaded · <b>${fromWeb}</b> she found or wrote herself
     </div>
 
-    <div class="k" style="margin:14px 0 6px">${written} questions</div>
-    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#EDE9DF">
-      <div style="width:${Math.round(cleared / written * 100)}%;background:#4F7A4A"></div>
-      <div style="width:${Math.round(prov / written * 100)}%;background:#8FAE86"></div>
-      <div style="width:${Math.round(failed / written * 100)}%;background:#A94A38"></div>
-      <div style="width:${Math.round(draft / written * 100)}%;background:#B07D2B"></div>
+    <div class="k" style="margin:6px 0 6px">${written.toLocaleString()} questions in the bank</div>
+
+    <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;background:#EDE9DF">
+      ${STATE.map((x) => `<div style="width:${pctOf(x.n)}%;background:${x.tone}"></div>`).join("")}
     </div>
-    <div style="margin-top:10px; font-size:15px">
-      <b>${cleared}</b> confirmed against official material &nbsp;·&nbsp; <b>${prov}</b> usable
+
+    <div style="margin-top:12px;display:grid;gap:7px">
+      ${STATE.map((x) => `
+        <div style="display:flex;align-items:flex-start;gap:9px">
+          <span style="flex:none;width:11px;height:11px;border-radius:3px;background:${x.tone};margin-top:4px"></span>
+          <span style="font-size:14px;line-height:1.4">
+            <b>${Number(x.n).toLocaleString()}</b> ${x.word}
+            <span class="sub" style="display:block;margin-top:1px">${x.means}</span>
+          </span>
+        </div>`).join("")}
     </div>
-    <div class="sub" style="margin-top:4px">
-      ${failed} failed and never shown${draft ? ` · ${draft} still waiting to be checked` : ""}
+
+    <div style="margin-top:14px;display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;
+                background:${state === "running" ? "#EDF2E7" : "#FAF0DC"};border:1px solid ${state === "running" ? "#D5E0CA" : "#EEDCB8"}">
+      <span style="flex:none;width:9px;height:9px;border-radius:50%;background:${state === "running" ? "#4F7A4A" : "#B07D2B"}"></span>
+      <span style="font-size:13.5px;color:#3D3A34">
+        ${state === "running"
+          ? `Checking now — ${draft} to go${minutes ? `, about ${minutes} minute${minutes === 1 ? "" : "s"}` : ""}.`
+          : draft
+            ? `The checker is idle. ${draft} questions are waiting for it — it starts when the queue runs.`
+            : "The checker is idle and has nothing waiting."}
+      </span>
     </div>
-    ${Number(k.llm_answers ?? 0) ? `<div class="sub" style="margin-top:4px">
-      ${k.llm_answers} answer${Number(k.llm_answers) === 1 ? "" : "s"} worked out by the coach, not from your files —
-      each one is marked on screen and on the printout until it is checked
-    </div>` : ""}
-    <div class="sub" style="margin-top:8px">${draft
-      ? (S.queueRunning
-          ? `Checking the ${draft} still waiting — about ${minutes} minute${minutes === 1 ? "" : "s"}.`
-          : `${draft} waiting to be checked. The checker is not running right now — it picks them up when the queue is started.`)
-      : cleared < prov
-        ? `Verified needs official material for that exam. Only ${(k.official_exams ?? []).length
-            ? (k.official_exams ?? []).join(", ") : "no exam"} has any and it has not been read yet, so
-            ${prov} questions passed their check but nothing confirms them.`
-        : "Everything written has been checked and confirmed where material exists."}</div>`;
+
+    ${Number(k.llm_answers ?? 0) ? `
+    <div style="margin-top:10px;display:flex;align-items:flex-start;gap:9px">
+      <span style="flex:none;width:11px;height:11px;border-radius:3px;background:#B07D2B;margin-top:4px"></span>
+      <span style="font-size:13.5px;line-height:1.45">
+        <b>${Number(k.llm_answers).toLocaleString()}</b> answers were worked out by the coach, not taken from your files.
+        <span class="sub" style="display:block">Each one says so on his screen and on the printout until it is checked.</span>
+      </span>
+    </div>` : ""}`;
 }
+
 
 /* read the sources, keep your uploads, and check the bank */
 /* she reads the sources on her own once a day, in the background, so nobody waits */
