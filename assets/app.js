@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.88.0";
+import * as data from "./data.js?v=3.89.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.88.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.89.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -1884,6 +1884,7 @@ async function start() {
 
 async function bootInner() {
   paintTemple();   // the sign-in screen is the first thing anyone sees
+  show("boot");    // nothing else until we know whether this is a parent or the child
   if (location.hash.includes("type=recovery")) {
     show("signin");
     $("newPassCard").classList.remove("hidden");
@@ -1892,8 +1893,12 @@ async function bootInner() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) { show("signin"); $("signOut").style.display = "none"; return; }
   $("signOut").style.display = "inline-block";
-  try { await loadContext(); } catch (e) { console.warn("context load failed:", e?.message); }
-  const { data: isP } = await sb.rpc("is_parent");
+  // the role and the context are independent: ask for both at once
+  const [ctxRes, roleRes] = await Promise.all([
+    loadContext().catch((e) => { console.warn("context load failed:", e?.message); return null; }),
+    sb.rpc("is_parent"),
+  ]);
+  const isP = roleRes?.data;
   S.isParent = !!isP;
   $("appTitleText").textContent = S.isParent ? "Quest Coach · parent" : "Quest Coach";
   $("parentBtn")?.classList.toggle("hidden", !S.isParent);
@@ -2505,8 +2510,12 @@ async function ensureExamCounts(force) {
 }
 
 async function loadParent() {
-  await loadSync();
-  const { data } = await sb.rpc("truth");
+  // the two reads that the screen cannot be drawn without, at the same time
+  const [syncRes, truthRes] = await Promise.all([
+    loadSync(),
+    sb.rpc("truth"),
+  ]);
+  const data = truthRes?.data;
   S.TR = data ?? {};
   S.studentId = data?.student?.id ?? S.studentId ?? null;
   S.pctx = data ?? {};
@@ -2514,10 +2523,9 @@ async function loadParent() {
     exam: f.label, school: f.schools, sits_on: f.exam_on, headline: f.verdict,
     sits_minutes: 0, measured_minutes: 0, sections: [], calendar_name: "",
   }));
-  loadAccount();
-  loadChildren();
-  loadParents();
-  loadPapersToRead();
+
+  // everything else is a card further down the page: let it arrive after the screen
+  Promise.allSettled([loadAccount(), loadChildren(), loadParents(), loadPapersToRead()]);
 }
 
 const BANK_LABEL = {
@@ -2530,7 +2538,7 @@ const BANK_LABEL = {
 };
 
 async function goParent() {
-  await loadParent();
+  if (!(S.TR?.families ?? []).length) await loadParent();   // boot already did this once
   Promise.resolve({ data: (S.TR ?? {}).journey, error: null }).then(({ data, error }) => {
     if (!$("pFlight")) return;
     if (error) {
@@ -2546,6 +2554,7 @@ async function goParent() {
   const c = S.pctx ?? {};
   const me = (await sb.auth.getUser()).data?.user?.email ?? "";
   $("pWho").textContent = me ? `Parent view · signed in as ${me}` : "Parent view";
+  if ($("hello")) $("hello").textContent = "Hello,";
   $("pChild").textContent = `${c.student?.name ?? "your child"} — how it is going`;
   const a = c.attempts ?? {}, se = c.sessions ?? {}, st = c.student ?? {};
   $("pSummary").textContent =
