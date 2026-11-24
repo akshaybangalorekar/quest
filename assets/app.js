@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.89.0";
+import * as data from "./data.js?v=3.89.1";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.89.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.89.1";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -2524,8 +2524,9 @@ async function loadParent() {
     sits_minutes: 0, measured_minutes: 0, sections: [], calendar_name: "",
   }));
 
-  // everything else is a card further down the page: let it arrive after the screen
-  Promise.allSettled([loadAccount(), loadChildren(), loadParents(), loadPapersToRead()]);
+  // the cards further down the page, fetched together rather than one after another
+  await Promise.allSettled([loadAccount(), loadChildren(), loadParents(), loadPapersToRead()]);
+  S.parentLoadedAt = Date.now();
 }
 
 const BANK_LABEL = {
@@ -2538,7 +2539,9 @@ const BANK_LABEL = {
 };
 
 async function goParent() {
-  if (!(S.TR?.families ?? []).length) await loadParent();   // boot already did this once
+  // boot already loaded it a moment ago; do not pay for it twice
+  const fresh = S.parentLoadedAt && (Date.now() - S.parentLoadedAt) < 5000;
+  if (!fresh) await loadParent();
   Promise.resolve({ data: (S.TR ?? {}).journey, error: null }).then(({ data, error }) => {
     if (!$("pFlight")) return;
     if (error) {

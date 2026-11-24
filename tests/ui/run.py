@@ -137,6 +137,11 @@ window.__done = false;
   if (batch) { const [i, of] = batch.split("/").map(Number);
     const size = Math.ceil(cases.length / of); cases = cases.slice(i * size, (i + 1) * size); }
   for (const c of cases) {
+    // a cached count from the case before is not this case's count
+    try {
+      window.__fixtures = window.__fixtures || {};
+      if (window.__state) { window.__state.examCounts = []; window.__state.examCountsAt = 0; window.__state.TR = null; window.__state.parentLoadedAt = 0; }
+    } catch (e) {}
     if (!suites && !batch && c.generated) continue;   // generated suites only run when asked for
     if (only && !c.name.toLowerCase().includes(only)) continue;
     const checks = [];
