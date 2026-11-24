@@ -42,6 +42,21 @@ window.CASES = [
   },
 
   {
+    name: "a parent never sees the child's landing page",
+    async run({ assert, T }) {
+      window.__fixtures["truth"] = T.baseTruth();
+      window.__fixtures["fn:is_parent"] = true;
+      window.__state.isParent = true;
+      T.show("boot");
+      await T.wait(10);
+      // the guard: goLanding for a parent goes to the parent screen instead
+      window.goLanding?.();
+      await T.wait(30);
+      assert("the child's landing page stays hidden", T.$("landing").classList.contains("hidden"));
+    },
+  },
+
+  {
     name: "a worked example opens when it is tapped",
     async run({ assert, T }) {
       const box = document.createElement("div");

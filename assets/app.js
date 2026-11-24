@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.91.1";
+import * as data from "./data.js?v=3.92.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.91.1";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.92.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -1895,7 +1895,19 @@ async function bootInner() {
     loadContext().catch((e) => { console.warn("context load failed:", e?.message); return null; }),
     sb.rpc("is_parent"),
   ]);
-  const isP = roleRes?.data;
+  let isP = roleRes?.data;
+  if (roleRes?.error || isP === null || isP === undefined) {
+    // one more try: a wrong guess here is the child's screen appearing to a parent
+    const again = await sb.rpc("is_parent").catch(() => ({ data: null }));
+    isP = again?.data ?? null;
+  }
+  if (isP === null || isP === undefined) {
+    show("boot");
+    $("boot").innerHTML = `<div class="card" style="text-align:center;padding:34px">
+      <div class="k">Quest Coach</div>
+      <div class="sub">Could not confirm your account. Check the connection, then reload.</div></div>`;
+    return;
+  }
   S.isParent = !!isP;
   $("appTitleText").textContent = S.isParent ? "Quest Coach · parent" : "Quest Coach";
   $("parentBtn")?.classList.toggle("hidden", !S.isParent);
@@ -3538,6 +3550,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) refr
 window.addEventListener("focus", refreshVisible);
 
 function goLanding() {
+  if (S.isParent) { goParent(); return; }   // a parent never lands on the child's page
   show("landing");
   const c = S.ctx ?? {};
   $("hello").textContent = `Hello, ${c.name ?? "there"}`;
@@ -5507,6 +5520,7 @@ registerActions({
 });
 
 window.__state = S;           // read-only view for the tests
+window.goLanding = goLanding;  // so a test can prove a parent never reaches it
 
 let api = {};
 try {
