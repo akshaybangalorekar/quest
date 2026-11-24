@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.86.0";
+import * as data from "./data.js?v=3.87.0";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.86.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.87.0";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -734,11 +734,11 @@ async function loadTraining() {
     </div>
 
     <div class="k" style="margin:14px 0 6px">${written} questions</div>
-    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#EEF1F5">
-      <div style="width:${Math.round(cleared / written * 100)}%;background:#00796B"></div>
-      <div style="width:${Math.round(prov / written * 100)}%;background:#8FBFB6"></div>
-      <div style="width:${Math.round(failed / written * 100)}%;background:#D81B60"></div>
-      <div style="width:${Math.round(draft / written * 100)}%;background:#E8A317"></div>
+    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#EDE9DF">
+      <div style="width:${Math.round(cleared / written * 100)}%;background:#4F7A4A"></div>
+      <div style="width:${Math.round(prov / written * 100)}%;background:#8FAE86"></div>
+      <div style="width:${Math.round(failed / written * 100)}%;background:#A94A38"></div>
+      <div style="width:${Math.round(draft / written * 100)}%;background:#B07D2B"></div>
     </div>
     <div style="margin-top:10px; font-size:15px">
       <b>${cleared}</b> confirmed against official material &nbsp;·&nbsp; <b>${prov}</b> usable
@@ -1187,7 +1187,7 @@ function journeyChart(j) {
                  transform="rotate(-16 ${p.x} ${p.y})"/>
         <text x="${p.x}" y="${nameY}" fill="${p.firm ? "#dfe6ff" : "#b9c2e8"}" font-size="11.5" text-anchor="${anchor}"
               font-weight="${p.firm ? 700 : 600}" ${p.firm ? "" : 'opacity=".9"'}>${esc(p.label)}${p.firm ? "" : "*"}</text>
-        <text x="${p.x}" y="${daysY}" fill="#8f9ac4" font-size="10.5" text-anchor="${anchor}">${p.days} days</text>
+        <text x="${p.x}" y="${daysY}" fill="#A39C8C" font-size="10.5" text-anchor="${anchor}">${p.days} days</text>
       </g>`;
   }).join("");
 
@@ -1202,11 +1202,11 @@ function journeyChart(j) {
         </linearGradient>
         <linearGradient id="trail" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stop-color="#6d5ef0" stop-opacity=".25"/>
-          <stop offset="${Math.max(4, Math.min(96, (todayX / W) * 100))}%" stop-color="#a99bff" stop-opacity=".95"/>
+          <stop offset="${Math.max(4, Math.min(96, (todayX / W) * 100))}%" stop-color="#C96442" stop-opacity=".95"/>
           <stop offset="100%" stop-color="#6d5ef0" stop-opacity=".2"/>
         </linearGradient>
-        <radialGradient id="glow"><stop offset="0%" stop-color="#a99bff" stop-opacity=".55"/>
-          <stop offset="100%" stop-color="#a99bff" stop-opacity="0"/></radialGradient>
+        <radialGradient id="glow"><stop offset="0%" stop-color="#C96442" stop-opacity=".55"/>
+          <stop offset="100%" stop-color="#C96442" stop-opacity="0"/></radialGradient>
       </defs>
       <rect x="0" y="0" width="${W}" height="${H}" rx="16" fill="url(#sky)"/>
       ${stars}
@@ -1218,13 +1218,13 @@ function journeyChart(j) {
       <circle cx="${todayX}" cy="${todayY}" r="24" fill="url(#glow)"/>
       <g transform="translate(${todayX} ${todayY}) rotate(-45)">
         <path d="M 0 -11 C 4 -5 4 5 0 11 C -4 5 -4 -5 0 -11 Z" fill="#fff"/>
-        <path d="M -3 6 L -8 14 L -2 11 Z" fill="#a99bff"/>
-        <path d="M 3 6 L 8 14 L 2 11 Z" fill="#a99bff"/>
+        <path d="M -3 6 L -8 14 L -2 11 Z" fill="#C96442"/>
+        <path d="M 3 6 L 8 14 L 2 11 Z" fill="#C96442"/>
         <circle cx="0" cy="-2" r="2.4" fill="#4b3fc4"/>
       </g>
       <text x="${todayX}" y="${todayY + 34}" fill="#cfd6f7" font-size="11" text-anchor="middle" font-weight="600">you are here</text>
-      <text x="${pad}" y="${H - 12}" fill="#8f9ac4" font-size="10.5">start · ${new Date(j.start).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</text>
-      <text x="${W - pad}" y="${H - 12}" fill="#8f9ac4" font-size="10.5" text-anchor="end">${j.days_left} days left</text>
+      <text x="${pad}" y="${H - 12}" fill="#A39C8C" font-size="10.5">start · ${new Date(j.start).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</text>
+      <text x="${W - pad}" y="${H - 12}" fill="#A39C8C" font-size="10.5" text-anchor="end">${j.days_left} days left</text>
       ${exams.some((m) => m.status !== "confirmed")
         ? `<text x="${pad}" y="20" fill="#6f7aa6" font-size="10">* date not yet published by the school</text>` : ""}
     </svg>

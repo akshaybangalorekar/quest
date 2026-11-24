@@ -833,3 +833,62 @@ body.signing{overflow:hidden!important; height:100dvh!important}
   .srcRow{grid-template-columns:auto minmax(0,1fr) auto; row-gap:6px}
   .srcWhen{grid-column:2; text-align:left}
 }
+
+/* ============================================================================
+   Warm palette, applied across the whole app — child and parent alike.
+   Terracotta for accent, olive for good, ochre for caution, brick for stop.
+   Nothing blue-violet survives: it reads cold next to a child's paper.
+   ========================================================================== */
+:root{
+  --ink:#1F1E1D; --mut:#6B6A63; --line:#E6E1D6; --bg:#FAF9F5; --card:#FFFFFF;
+  --acc:#C96442; --acc-soft:#FBEEE9; --ok:#4F7A4A; --amber:#B07D2B; --red:#A94A38;
+  --chip:#F2EEE6;
+  --shadow:0 1px 2px rgba(58,50,38,.05), 0 10px 28px rgba(58,50,38,.06);
+  /* warm neutrals for surfaces */
+  --paper:#F0EEE6; --paper-2:#F7F5EF; --ink-2:#3D3A34;
+}
+body{background:var(--bg);color:var(--ink)}
+
+/* status chips */
+.chip{background:var(--chip);color:var(--ink-2);border-color:var(--line)}
+.chip.green{background:#EDF2E7;color:#3F6238;border-color:#D5E0CA}
+.chip.amber{background:#FAF0DC;color:#7A5715;border-color:#EEDCB8}
+.chip.orange{background:#FBE9E1;color:#8E4425;border-color:#F0CDBD}
+.chip.red{background:#F8E7E2;color:#8A3A2A;border-color:#EBCBC1}
+.chip.grey{background:#F2EFE8;color:#5E5A52;border-color:#E4DFD3}
+.chip.blue{background:#EEF1EC;color:#4A5A46;border-color:#DCE3D6}
+
+/* dots, pills, bars */
+.dot.green{background:var(--ok)}.dot.amber{background:var(--amber)}
+.dot.red{background:var(--red)}.dot.grey{background:#C9C3B6}
+.pill.ok{background:#EDF2E7;color:var(--ok)}
+.pill.amber{background:#FAF0DC;color:var(--amber)}
+.pill.red{background:#F8E7E2;color:var(--red)}
+.pill.grey{background:#F2EFE8;color:var(--mut)}
+.xpbar{background:#EDE9DF}.xpbar i{background:var(--acc)}
+
+/* the mastery grid keeps its meaning, in warm tones */
+.t.mastered{background:var(--ok)}
+.t.cleared{background:#8FAE86}
+.t.in_progress{background:var(--acc)}
+.t.needs_work{background:var(--amber)}
+.t.not_started{background:#E2DCCE;color:#8A8578}
+.leg .mastered::before{background:var(--ok)}
+.leg .cleared::before{background:#8FAE86}
+.leg .in_progress::before{background:var(--acc)}
+.leg .needs_work::before{background:var(--amber)}
+.leg .not_started::before{background:#E2DCCE}
+
+/* buttons and inputs */
+button.go{background:var(--acc);border-color:var(--acc);color:#fff}
+button.ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+input,textarea,select{background:#fff;border-color:var(--line);color:var(--ink)}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--acc-soft);border-color:var(--acc)}
+
+/* surfaces that were cool grey or lilac */
+.msg.think{background:#F7F3EC;border-color:#E4DCCB}
+.qcard,.card,.exam,.opts button,.srcRow{background:var(--card);border-color:var(--line)}
+.ttRow,.ttSection,.ttSectionHead{border-color:var(--line)}
+.bar2{background:#EDE9DF}
+a{color:var(--acc)}
+::selection{background:#F3D9CF}
