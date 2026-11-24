@@ -1,4 +1,4 @@
-import * as data from "./data.js?v=3.91.0";
+import * as data from "./data.js?v=3.91.1";
 
 const createClient = window.supabase?.createClient;
 if (!createClient) {
@@ -295,7 +295,7 @@ document.addEventListener("click", (e) => {
 
 const TITLES = ["Apprentice", "Explorer", "Challenger", "Olympian", "Grandmaster"];
 const COACH = "Ananya";   // her name, in one place
-const APP_VERSION = "3.91.0";   // bumped on every push; shown at the foot of the page
+const APP_VERSION = "3.91.1";   // bumped on every push; shown at the foot of the page
 
 window.__sb = sb;
 
@@ -5287,8 +5287,18 @@ registerActions({
     const v = Number($("balIn")?.value ?? 0);
     if (!Number.isFinite(v) || v < 0) return;
     await sb.rpc("set_model_balance", { p_inr: v });
+    // a topped-up wallet means the "no credit" flag is stale: clear it and try again now
+    try { await sb.rpc("clear_credit_flag"); } catch (_) {}
     $("dateBanner") && ($("dateBanner").className = "hidden");
-    loadTraining();
+    const msg = $("trainMsg");
+    if (msg) msg.textContent = "Balance saved. Testing the model and restarting the queue…";
+    await loadTraining();
+    // one real call proves it; if the wallet is still empty the flag comes straight back
+    try {
+      await sb.functions.invoke("run-jobs", { body: { mode: "check", limit: 3, lanes: 1, depth: 0 } });
+    } catch (_) {}
+    setTimeout(() => { if ($("trainList")) loadTraining(); }, 6000);
+    setTimeout(() => { if ($("trainList")) loadTraining(); }, 15000);
   },
   dismissJobBanner: () => { const el = $("dateBanner"); if (el) el.className = "hidden"; },
   addAlertTo: (el) => addAlertTo(el),
